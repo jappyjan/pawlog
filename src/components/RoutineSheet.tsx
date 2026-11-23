@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
@@ -8,7 +8,7 @@ import { Sheet } from "./Sheet";
 import { useToast } from "./Toast";
 import { useApp } from "../lib/app";
 import { errorMessage, tz } from "../lib/format";
-import { NOTIFY_OPTIONS, notifyLabel, ROUTINE_TYPES, WEEK, weekdayShort, type Routine, type RoutineType } from "../lib/routines";
+import { NOTIFY_OPTIONS, notifyLabel, ROUTINE_TYPES, timesOf, WEEK, weekdayShort, type Routine, type RoutineType } from "../lib/routines";
 
 /**
  * Create or edit a daily routine and when the household gets pinged about it.
@@ -35,6 +35,14 @@ function Form({ routine, fixedType, meals, onDone }: { routine?: Routine; fixedT
   const [type, setType] = useState<RoutineType>(fixedType ?? "meal");
   const [mealId, setMealId] = useState<string>(routine?.mealId ?? "");
   const [days, setDays] = useState<number[]>(routine?.days ?? WEEK);
+  const [times, setTimes] = useState<{ key: number; value: string }[]>(() =>
+    (routine ? timesOf(routine) : ["08:00"]).map((value, key) => ({ key, value })),
+  );
+  const addTime = () => {
+    const last = times.at(-1)?.value ?? "08:00";
+    const h = Math.min(23, Number(last.slice(0, 2)) + 4);
+    setTimes([...times, { key: Math.max(0, ...times.map((x) => x.key)) + 1, value: `${String(h).padStart(2, "0")}:${last.slice(3)}` }]);
+  };
   const [busy, setBusy] = useState(false);
   const notifyOptions =
     routine && !NOTIFY_OPTIONS.includes(routine.notifyBefore) ? [...NOTIFY_OPTIONS, routine.notifyBefore].sort((a, b) => a - b) : NOTIFY_OPTIONS;
@@ -50,7 +58,7 @@ function Form({ routine, fixedType, meals, onDone }: { routine?: Routine; fixedT
         const fd = new FormData(e.currentTarget);
         const args = {
           type,
-          time: String(fd.get("time") ?? ""),
+          times: times.map((x) => x.value).filter(Boolean),
           timezone: tz(),
           days: days.length === 7 ? undefined : days,
           notifyBefore: Number(fd.get("notifyBefore") ?? 0),
@@ -90,19 +98,46 @@ function Form({ routine, fixedType, meals, onDone }: { routine?: Routine; fixedT
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label" htmlFor="rt-time">{t("routines.time")}</label>
-          <input id="rt-time" name="time" type="time" className="input text-lg font-bold" defaultValue={routine?.time ?? "08:00"} required />
+      <fieldset>
+        <legend className="label">{times.length > 1 ? t("routines.times") : t("routines.time")}</legend>
+        <div className="space-y-2">
+          {times.map((x, i) => (
+            <div key={x.key} className="flex gap-2">
+              <input
+                type="time"
+                aria-label={`${t("routines.time")} ${i + 1}`}
+                className="input text-lg font-bold"
+                value={x.value}
+                onChange={(e) => setTimes(times.map((y) => (y.key === x.key ? { ...y, value: e.target.value } : y)))}
+                required
+              />
+              {times.length > 1 && (
+                <button
+                  type="button"
+                  className="btn-ghost size-12 shrink-0 p-0"
+                  aria-label={t("routines.removeTime", { time: x.value })}
+                  onClick={() => setTimes(times.filter((y) => y.key !== x.key))}
+                >
+                  <X className="size-5" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
-        <div>
-          <label className="label" htmlFor="rt-notify">{t("routines.notify")}</label>
-          <select id="rt-notify" name="notifyBefore" className="input" defaultValue={routine?.notifyBefore ?? 15}>
-            {notifyOptions.map((m) => (
-              <option key={m} value={m}>{notifyLabel(t, m)}</option>
-            ))}
-          </select>
-        </div>
+        {times.length < 12 && (
+          <button type="button" className="btn-ghost -ml-2 mt-1 text-sm" onClick={addTime}>
+            <Plus className="size-4" /> {t("routines.addTime")}
+          </button>
+        )}
+      </fieldset>
+
+      <div>
+        <label className="label" htmlFor="rt-notify">{t("routines.notify")}</label>
+        <select id="rt-notify" name="notifyBefore" className="input" defaultValue={routine?.notifyBefore ?? 15}>
+          {notifyOptions.map((m) => (
+            <option key={m} value={m}>{notifyLabel(t, m)}</option>
+          ))}
+        </select>
       </div>
 
       <fieldset>
@@ -162,7 +197,7 @@ function Form({ routine, fixedType, meals, onDone }: { routine?: Routine; fixedT
             className="btn-danger"
             aria-label={t("common.delete")}
             onClick={async () => {
-              if (!confirm(t("routines.deleteConfirm", { time: routine.time }))) return;
+              if (!confirm(t("routines.deleteConfirm", { time: timesOf(routine).join(", ") }))) return;
               await remove({ routineId: routine._id });
               onDone();
             }}

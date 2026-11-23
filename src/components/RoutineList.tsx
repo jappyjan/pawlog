@@ -4,7 +4,7 @@ import { Bell, BellOff, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../convex/_generated/api";
 import { useApp } from "../lib/app";
-import { daysLabel, notifyLabel, routineEmoji, routineName, type Routine, type RoutineType } from "../lib/routines";
+import { daysLabel, notifyLabel, routineEmoji, routineName, timesOf, type Routine, type RoutineType } from "../lib/routines";
 import { RoutineSheet } from "./RoutineSheet";
 import { PushCard } from "./PushCard";
 
@@ -32,11 +32,15 @@ export function RoutineList({ type, title, empty, pushHint = true }: { type?: Ro
         {routines?.map((r) => (
           <li key={r._id} className={`flex items-center gap-2 py-2.5 ${r.enabled ? "" : "opacity-60"}`}>
             <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setSheet({ routine: r })}>
-              <span className="w-14 shrink-0 text-lg font-extrabold tabular-nums">{r.time}</span>
               <span className="min-w-0">
                 <span className="block truncate font-semibold">
                   {!type && <span aria-hidden>{routineEmoji(r.type)} </span>}
                   {routineName(t, r, mealName(r.mealId))}
+                </span>
+                <span className="flex flex-wrap gap-1 py-0.5">
+                  {timesOf(r).map((time) => (
+                    <span key={time} className="rounded-md bg-brand-soft px-1.5 text-sm font-bold tabular-nums text-brand-ink">{time}</span>
+                  ))}
                 </span>
                 <span className="block truncate text-sm text-muted">
                   {daysLabel(t, r.days)} · {r.enabled ? notifyLabel(t, r.notifyBefore) : t("routines.off")}

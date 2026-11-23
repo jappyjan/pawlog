@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { clean, requireDog } from "./lib";
 import { routineType } from "./schema";
-import { nextRoutineNotify } from "./schedule";
+import { nextRoutineNotify, timesOf } from "./schedule";
 
 /** Don't nag if someone already did it this long before the push would go out. */
 const ALREADY_DONE_WINDOW_MS = 60 * 60_000;
@@ -29,18 +29,18 @@ async function arm(ctx: MutationCtx, routineId: Id<"routines">, after = Date.now
   const r = await ctx.db.get(routineId);
   if (!r) return;
   await cancelJob(ctx, r.scheduledJobId);
-  const at = r.enabled ? nextRoutineNotify(r, after) : null;
-  if (at === null) {
+  const next = r.enabled ? nextRoutineNotify(r, after) : null;
+  if (next === null) {
     await ctx.db.patch(routineId, { scheduledJobId: undefined, nextNotifyAt: undefined });
     return;
   }
-  const jobId = await ctx.scheduler.runAt(at, internal.routines.fire, { routineId });
-  await ctx.db.patch(routineId, { scheduledJobId: jobId, nextNotifyAt: at });
+  const jobId = await ctx.scheduler.runAt(next.at, internal.routines.fire, { routineId, time: next.time });
+  await ctx.db.patch(routineId, { scheduledJobId: jobId, nextNotifyAt: next.at });
 }
 
 const fields = {
   type: routineType,
-  time: v.string(),
+  times: v.array(v.string()),
   timezone: v.string(),
   days: v.optional(v.array(v.number())),
   notifyBefore: v.number(),
@@ -48,12 +48,14 @@ const fields = {
   label: v.optional(v.string()),
 };
 
-function normalize(f: { type: RoutineType; time: string; notifyBefore: number; days?: number[]; mealId?: Id<"meals">; label?: string; timezone: string }) {
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(f.time)) throw new ConvexError("Pick a time");
+function normalize(f: { type: RoutineType; times: string[]; notifyBefore: number; days?: number[]; mealId?: Id<"meals">; label?: string; timezone: string }) {
+  const times = [...new Set(f.times)].sort();
+  if (times.length === 0 || times.some((t) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(t))) throw new ConvexError("Pick a time");
+  if (times.length > 12) throw new ConvexError("Too many times");
   if (!Number.isInteger(f.notifyBefore) || f.notifyBefore < 0 || f.notifyBefore > 12 * 60) throw new ConvexError("Pick when to notify");
   const days = [...new Set(f.days ?? [])].filter((d) => Number.isInteger(d) && d >= 0 && d <= 6).sort();
   if (f.days && days.length === 0) throw new ConvexError("Pick at least one day");
-  const out = clean({ ...f, days: days.length === 7 || !f.days ? undefined : days, mealId: f.type === "meal" ? f.mealId : undefined });
+  const out = clean({ ...f, times, days: days.length === 7 || !f.days ? undefined : days, mealId: f.type === "meal" ? f.mealId : undefined });
   if (out.type === "other" && !out.label) throw new ConvexError("Name is required");
   return out;
 }
@@ -63,7 +65,7 @@ export const list = query({
   handler: async (ctx, { dogId }) => {
     await requireDog(ctx, dogId);
     const routines = await ctx.db.query("routines").withIndex("by_dog", (q) => q.eq("dogId", dogId)).collect();
-    return routines.sort((a, b) => a.time.localeCompare(b.time));
+    return routines.sort((a, b) => (timesOf(a)[0] ?? "").localeCompare(timesOf(b)[0] ?? ""));
   },
 });
 
@@ -89,7 +91,7 @@ export const update = mutation({
   handler: async (ctx, { routineId, ...rest }) => {
     await own(ctx, routineId);
     // `label` may be left out of the args; clear it then (days/mealId are always set by normalize).
-    await ctx.db.patch(routineId, { label: undefined, ...normalize(rest) });
+    await ctx.db.patch(routineId, { time: undefined, label: undefined, ...normalize(rest) });
     await arm(ctx, routineId);
   },
 });
@@ -115,10 +117,11 @@ export const remove = mutation({
 /** Runs `notifyBefore` minutes ahead of a routine: push to the household (unless it was
  *  just done), then arm the next one. */
 export const fire = internalMutation({
-  args: { routineId: v.id("routines") },
-  handler: async (ctx, { routineId }) => {
+  args: { routineId: v.id("routines"), time: v.optional(v.string()) },
+  handler: async (ctx, { routineId, time: firedTime }) => {
     const r = await ctx.db.get(routineId);
     if (!r || !r.enabled) return;
+    const time = firedTime ?? timesOf(r)[0];
     const now = Date.now();
     const dog = await ctx.db.get(r.dogId);
     if (!dog) return;
@@ -129,8 +132,8 @@ export const fire = internalMutation({
       const name = { en: what ?? meta.name.en, de: what ?? meta.name.de };
       const body =
         r.notifyBefore > 0
-          ? { en: `${name.en} in ${r.notifyBefore} min (${r.time})`, de: `${name.de} in ${r.notifyBefore} Min. (${r.time} Uhr)` }
-          : { en: `Time for ${name.en} (${r.time})`, de: `Zeit für ${name.de} (${r.time} Uhr)` };
+          ? { en: `${name.en} in ${r.notifyBefore} min (${time})`, de: `${name.de} in ${r.notifyBefore} Min. (${time} Uhr)` }
+          : { en: `Time for ${name.en} (${time})`, de: `Zeit für ${name.de} (${time} Uhr)` };
       await ctx.scheduler.runAfter(0, internal.push.sendToHousehold, {
         householdId: r.householdId,
         title: `${meta.emoji} ${dog.name}`,

@@ -280,6 +280,9 @@ export const en = {
     what: "What",
     type: { meal: "Feeding", walk: "Walk", potty: "Potty break", other: "Other" },
     time: "Time",
+    times: "Times",
+    addTime: "Add another time",
+    removeTime: "Remove {{time}}",
     notify: "Notify",
     days: "Days",
     everyDay: "Every day",
@@ -299,7 +302,7 @@ export const en = {
     unmute: "Turn on notification",
     hint: "Skipped if someone already logged it in the hour before.",
     hintOther: "Everyone in the household gets a push at this time.",
-    deleteConfirm: "Delete the {{time}} routine?",
+    deleteConfirm: "Delete this routine ({{time}})?",
   },
   foodPage: {
     title: "Food & meals",

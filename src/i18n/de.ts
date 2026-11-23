@@ -282,6 +282,9 @@ export const de: Translation = {
     what: "Was",
     type: { meal: "Fütterung", walk: "Gassi", potty: "Pipi-Pause", other: "Sonstiges" },
     time: "Uhrzeit",
+    times: "Uhrzeiten",
+    addTime: "Weitere Uhrzeit",
+    removeTime: "{{time}} entfernen",
     notify: "Benachrichtigen",
     days: "Tage",
     everyDay: "Jeden Tag",
@@ -301,7 +304,7 @@ export const de: Translation = {
     unmute: "Benachrichtigung einschalten",
     hint: "Entfällt, wenn es in der Stunde davor schon jemand eingetragen hat.",
     hintOther: "Alle im Haushalt bekommen zu dieser Zeit eine Benachrichtigung.",
-    deleteConfirm: "Routine um {{time}} Uhr löschen?",
+    deleteConfirm: "Diese Routine ({{time}} Uhr) löschen?",
   },
   foodPage: {
     title: "Futter & Mahlzeiten",

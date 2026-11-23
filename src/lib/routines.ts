@@ -13,6 +13,9 @@ export const ROUTINE_TYPES: { type: RoutineType; emoji: string }[] = [
 ];
 export const routineEmoji = (type: RoutineType) => ROUTINE_TYPES.find((r) => r.type === type)?.emoji ?? "⏰";
 
+/** A routine's times; older routines stored a single `time`. */
+export const timesOf = (r: { times?: string[]; time?: string }) => r.times ?? (r.time ? [r.time] : []);
+
 export const NOTIFY_OPTIONS = [0, 5, 10, 15, 30, 45, 60, 90, 120];
 
 /** "On time", "30 min before", "1 hour before", … */

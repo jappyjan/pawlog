@@ -198,7 +198,8 @@ export default defineSchema({
     householdId: v.id("households"),
     dogId: v.id("dogs"),
     type: routineType,
-    time: v.string(), // "HH:MM" local time in `timezone`
+    times: v.optional(v.array(v.string())), // "HH:MM" local times in `timezone`, sorted
+    time: v.optional(v.string()), // legacy single time; read via timesOf()
     timezone: v.string(),
     days: v.optional(v.array(v.number())), // weekdays 0 (Sun) … 6 (Sat); unset = every day
     notifyBefore: v.number(), // minutes before `time` to send the push (0 = on time)

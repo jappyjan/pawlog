@@ -34,20 +34,25 @@ export function nextOccurrence(rule: Rule, after: number): number | null {
   return null;
 }
 
-/** Next time a routine at `time` ("HH:MM" in `timezone`, on `days` or every day) should
- *  notify, `notifyBefore` minutes early, strictly after `after`. Null if no day matches. */
+/** A routine's times; older routines stored a single `time`. */
+export const timesOf = (r: { times?: string[]; time?: string }) => r.times ?? (r.time ? [r.time] : []);
+
+/** Next push for a routine with daily `times` ("HH:MM" in `timezone`, on `days` or every
+ *  day), `notifyBefore` minutes early, strictly after `after`. Null if nothing matches. */
 export function nextRoutineNotify(
-  r: { time: string; timezone: string; notifyBefore: number; days?: number[] },
+  r: { times?: string[]; time?: string; timezone: string; notifyBefore: number; days?: number[] },
   after: number,
-): number | null {
-  const [h, m] = r.time.split(":").map(Number);
+): { at: number; time: string } | null {
   const today = new TZDate(after, r.timezone);
+  let best: { at: number; time: string } | null = null;
   for (let d = 0; d <= 8; d++) {
     const day = addDays(today, d);
     if (r.days?.length && !r.days.includes(day.getDay())) continue;
-    const at = new TZDate(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0, 0, r.timezone).getTime();
-    const t = at - r.notifyBefore * 60_000;
-    if (t > after) return t;
+    for (const time of timesOf(r)) {
+      const [h, m] = time.split(":").map(Number);
+      const at = new TZDate(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0, 0, r.timezone).getTime() - r.notifyBefore * 60_000;
+      if (at > after && (!best || at < best.at)) best = { at, time };
+    }
   }
-  return null;
+  return best;
 }
