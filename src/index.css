@@ -109,3 +109,20 @@ dialog.sheet[open] { animation: sheet-in 0.22s cubic-bezier(.2,.9,.3,1); }
 @utility chip-on {
   @apply border-brand bg-brand-soft text-brand-ink;
 }
+
+/* Full-screen file viewer (native modal <dialog>). */
+dialog.viewer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #0d0b0a;
+  color: #fff;
+  overscroll-behavior: contain;
+}
+dialog.viewer::backdrop { background: #000; }

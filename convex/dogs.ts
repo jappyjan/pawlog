@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { clean, requireDog, requireHousehold, requireUser } from "./lib";
 import { internal } from "./_generated/api";
 import { stoolFields } from "./schema";
+import { filesOf } from "./documents";
 
 const dogFields = {
   name: v.string(),
@@ -73,7 +74,7 @@ export const remove = mutation({
       .query("documents")
       .withIndex("by_dog", (q) => q.eq("dogId", dogId))
       .collect()) {
-      await ctx.storage.delete(d.storageId);
+      for (const f of filesOf(d)) await ctx.storage.delete(f.storageId);
       await ctx.db.delete(d._id);
     }
     for (const m of await ctx.db

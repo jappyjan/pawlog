@@ -80,6 +80,23 @@ const savedMeals = await b.query(api.meals.list, { dogId });
 assert(savedMeals.length === 1 && savedMeals[0]._id === breakfast && savedMeals[0].kcal === 432 && savedMeals[0].items.length === 1, "saved meal shared, blank items dropped, kcal summed");
 await a.mutation(api.users.setLocale, { locale: "de" });
 assert((await a.query(api.users.me, {})).locale === "de", "user locale stored for localized push");
+// Multi-file documents
+const up = async (c, text) => {
+  const res = await fetch(await c.mutation(api.documents.generateUploadUrl, {}), { method: "POST", headers: { "Content-Type": "text/plain" }, body: text });
+  return (await res.json()).storageId;
+};
+const docId = await a.mutation(api.documents.create, {
+  dogId, title: "Insurance", category: "insurance",
+  files: [{ storageId: await up(a, "page 1"), name: "a.txt", contentType: "text/plain" }, { storageId: await up(a, "page 2"), name: "b.txt", contentType: "text/plain" }],
+});
+const s3 = await up(b, "page 3");
+await b.mutation(api.documents.addFiles, { documentId: docId, files: [{ storageId: s3, name: "c.txt" }] });
+let doc = (await a.query(api.documents.list, { dogId })).find((d) => d._id === docId);
+assert(doc.files.length === 3 && doc.files.every((f) => f.url), "document holds several files with URLs");
+await a.mutation(api.documents.reorderFiles, { documentId: docId, order: [s3, doc.files[0].storageId, doc.files[1].storageId] });
+await a.mutation(api.documents.removeFile, { documentId: docId, storageId: doc.files[1].storageId });
+doc = (await b.query(api.documents.list, { dogId })).find((d) => d._id === docId);
+assert(doc.files.map((f) => f.name).join() === "c.txt,a.txt", "files reorder and remove");
 let foodBlocked = false;
 const outsider = await user("Stranger");
 try { await outsider.mutation(api.foods.update, { foodId: kibble, name: "x", kind: "dry", unit: "g" }); } catch { foodBlocked = true; }

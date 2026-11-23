@@ -25,3 +25,17 @@ export async function uploadToConvex(uploadUrl: string, blob: Blob): Promise<Id<
   const { storageId } = await res.json();
   return storageId;
 }
+
+/** Upload several files one after another (phones on mobile data), keeping their names. */
+export async function uploadFiles(files: File[], uploadUrl: () => Promise<string>, onProgress?: (done: number) => void) {
+  const out: { storageId: Id<"_storage">; name: string; contentType?: string; size: number }[] = [];
+  for (const file of files) {
+    const blob = await shrinkImage(file, 2400, 0.88);
+    const storageId = await uploadToConvex(await uploadUrl(), blob);
+    // A shrunk photo is a JPEG now; keep the name honest.
+    const name = blob !== file && blob.type === "image/jpeg" ? file.name.replace(/\.[^.]+$/, "") + ".jpg" : file.name;
+    out.push({ storageId, name, contentType: blob.type || file.type || undefined, size: blob.size });
+    onProgress?.(out.length);
+  }
+  return out;
+}

@@ -56,6 +56,13 @@ export const stoolFields = {
   stoolFlags: v.optional(v.array(stoolFlag)),
 };
 
+export const docFile = v.object({
+  storageId: v.id("_storage"),
+  name: v.string(),
+  contentType: v.optional(v.string()),
+  size: v.optional(v.number()),
+});
+
 export const foodUnit = v.union(
   v.literal("g"),
   v.literal("piece"),
@@ -215,7 +222,9 @@ export default defineSchema({
     dogId: v.id("dogs"),
     title: v.string(),
     category: docCategory,
-    storageId: v.id("_storage"),
+    files: v.optional(v.array(docFile)), // one document can hold several files
+    // Legacy single-file fields (migrated into `files` by documents:migrateFiles).
+    storageId: v.optional(v.id("_storage")),
     contentType: v.optional(v.string()),
     size: v.optional(v.number()),
     date: v.optional(v.string()), // YYYY-MM-DD issued

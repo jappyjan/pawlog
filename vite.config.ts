@@ -13,7 +13,11 @@ export default defineConfig({
       filename: "sw.ts",
       registerType: "autoUpdate",
       injectRegister: false,
-      injectManifest: { globPatterns: ["**/*.{js,css,html,svg,png,webmanifest}"] },
+      injectManifest: {
+        globPatterns: ["**/*.{js,mjs,css,html,svg,png,webmanifest}"],
+        // pdf.js worker (~1.3 MB) so PDFs also open offline
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+      },
       devOptions: { enabled: false },
       manifest: {
         id: "/",
