@@ -38,6 +38,9 @@ const schedule = v.object({
   /** Absolute ms of the first dose for each time, computed on the client in its tz. */
   firstDueAts: v.array(v.number()),
   timezone: v.string(),
+  /** Last day of the course (YYYY-MM-DD) and the absolute ms of that day's end in `timezone`. */
+  endsOn: v.optional(v.string()),
+  endsAt: v.optional(v.number()),
 });
 
 export const create = mutation({
@@ -52,14 +55,18 @@ export const create = mutation({
     const { dog, userId } = await requireDog(ctx, dogId);
     const fields = clean(rest);
     if (!fields.name) throw new ConvexError("Name is required");
+    const endsAt = schedule?.endsOn ? schedule.endsAt : undefined;
+    const dueAts = schedule?.firstDueAts.filter((t) => endsAt === undefined || t <= endsAt) ?? [];
+    if (schedule && endsAt !== undefined && !dueAts.length) throw new ConvexError("The end date is before the first dose");
     const medicationId = await ctx.db.insert("medications", {
       ...fields,
       dogId,
       householdId: dog.householdId,
       active: true,
+      endsOn: endsAt !== undefined ? schedule?.endsOn : undefined,
     });
     if (schedule) {
-      for (const dueAt of schedule.firstDueAts) {
+      for (const dueAt of dueAts) {
         const id = await ctx.db.insert("reminders", {
           householdId: dog.householdId,
           dogId,
@@ -69,6 +76,7 @@ export const create = mutation({
           timezone: schedule.timezone,
           repeat: schedule.repeat,
           intervalDays: schedule.intervalDays,
+          endsAt,
           done: false,
           createdBy: userId,
         });
@@ -96,7 +104,7 @@ export const update = mutation({
   },
 });
 
-/** Stopping a medication pauses its reminders; restarting re-arms them. */
+/** Stopping a medication pauses its reminders; restarting re-arms them (unless the course has ended). */
 export const setActive = mutation({
   args: { medicationId: v.id("medications"), active: v.boolean() },
   handler: async (ctx, { medicationId, active }) => {
@@ -109,7 +117,9 @@ export const setActive = mutation({
       .withIndex("by_medication", (q) => q.eq("medicationId", medicationId))
       .collect();
     for (const r of reminders) {
-      await ctx.db.patch(r._id, { done: !active });
+      // A course that has already ended stays finished.
+      const ended = r.endsAt !== undefined && r.endsAt < Date.now();
+      await ctx.db.patch(r._id, { done: !active || ended });
       await scheduleNotification(ctx, r._id);
     }
   },

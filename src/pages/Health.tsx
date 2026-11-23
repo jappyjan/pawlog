@@ -9,6 +9,7 @@ import { ago, dayLabel, fmt, startOfLocalDay, time } from "../lib/format";
 import { EventSheet } from "../components/EventSheet";
 import { MedicationSheet } from "../components/MedicationSheet";
 import { useToast } from "../components/Toast";
+import { useNow } from "../lib/useNow";
 import type { EventType } from "../lib/events";
 import { stoolMeta, stoolScoreOf, stoolWarning } from "../lib/nutrition";
 import { useTranslation } from "react-i18next";
@@ -282,7 +283,9 @@ function MedRow({ m }: { m: Med }) {
   const remove = useMutation(api.medications.remove);
   const toast = useToast();
   const { t } = useTranslation();
+  const now = useNow(60_000);
   const next = m.reminders.filter((r) => !r.done).sort((a, b) => a.dueAt - b.dueAt)[0];
+  const ended = !!m.endsOn && m.endsOn < fmt(now, "yyyy-MM-dd");
   return (
     <li className={`py-3 ${m.active ? "" : "opacity-60"}`}>
       <div className="flex items-center gap-3">
@@ -293,6 +296,7 @@ function MedRow({ m }: { m: Med }) {
             {t("meds.lastGiven", { ago: ago(m.lastDoseAt) })}
             {m.active && next && <> · {t("meds.next", { when: `${dayLabel(next.dueAt)} ${time(next.dueAt)}` })}</>}
             {!m.active && ` · ${t("meds.paused")}`}
+            {m.endsOn && ` · ${ended ? t("meds.ended") : t("meds.ends", { date: fmt(new Date(`${m.endsOn}T00:00`), "d MMM yyyy") })}`}
           </span>
           {m.notes && <span className="block text-sm text-muted">{m.notes}</span>}
         </span>

@@ -2,9 +2,10 @@ import { TZDate } from "@date-fns/tz";
 import { addDays, addMonths, addWeeks, addYears } from "date-fns";
 import type { Doc } from "./_generated/dataModel";
 
-type Rule = Pick<Doc<"reminders">, "dueAt" | "timezone" | "repeat" | "intervalDays">;
+type Rule = Pick<Doc<"reminders">, "dueAt" | "timezone" | "repeat" | "intervalDays" | "endsAt">;
 
-/** The first occurrence of a repeating rule strictly after `after`, or null for one-offs.
+/** The first occurrence of a repeating rule strictly after `after`, or null for one-offs
+ *  and once the rule's end (`endsAt`) has passed.
  *  Computed from the anchor (dueAt) in the reminder's own timezone so DST and
  *  month-end don't drift. */
 export function nextOccurrence(rule: Rule, after: number): number | null {
@@ -29,7 +30,7 @@ export function nextOccurrence(rule: Rule, after: number): number | null {
   let n = Math.max(1, Math.floor((after - rule.dueAt) / (approxDays * 86_400_000)) - 1);
   for (let i = 0; i < 10_000; i++, n++) {
     const t = step(n).getTime();
-    if (t > after) return t;
+    if (t > after) return rule.endsAt !== undefined && t > rule.endsAt ? null : t;
   }
   return null;
 }

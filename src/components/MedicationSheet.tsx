@@ -19,6 +19,7 @@ export function MedicationSheet({ open, onClose }: { open: boolean; onClose: () 
   const [remind, setRemind] = useState(true);
   const [times, setTimes] = useState<string[]>(["08:00"]);
   const [repeat, setRepeat] = useState<Repeat>("daily");
+  const [start, setStart] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
   return (
     <Sheet open={open} onClose={onClose} title={t("meds.newTitle")}>
@@ -27,7 +28,9 @@ export function MedicationSheet({ open, onClose }: { open: boolean; onClose: () 
         onSubmit={async (e) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
-          const start = String(fd.get("start"));
+          const endsOn = String(fd.get("end") ?? "") || undefined;
+          // Doses run through the whole end day, in local time.
+          const endsAt = endsOn ? new Date(`${endsOn}T23:59:59.999`).getTime() : undefined;
           const intervalDays = Number(fd.get("intervalDays")) || undefined;
           const step = (d: Date) =>
             repeat === "daily" ? addDays(d, 1) : repeat === "weekly" ? addDays(d, 7) : repeat === "monthly" ? addMonths(d, 1) : addDays(d, intervalDays ?? 1);
@@ -36,13 +39,17 @@ export function MedicationSheet({ open, onClose }: { open: boolean; onClose: () 
             while (d.getTime() < Date.now() - 60_000) d = step(d);
             return d.getTime();
           });
+          if (remind && endsAt !== undefined && !firstDueAts.some((at) => at <= endsAt)) {
+            toast({ text: t("meds.endTooEarly"), error: true });
+            return;
+          }
           try {
             await create({
               dogId: dog._id,
               name: String(fd.get("name")),
               dosage: String(fd.get("dosage")),
               notes: String(fd.get("notes")),
-              schedule: remind && firstDueAts.length ? { times, repeat, intervalDays, firstDueAts, timezone: tz() } : undefined,
+              schedule: remind && firstDueAts.length ? { times, repeat, intervalDays, firstDueAts, timezone: tz(), endsOn, endsAt } : undefined,
             });
             toast({ text: t("meds.added") });
             onClose();
@@ -83,24 +90,21 @@ export function MedicationSheet({ open, onClose }: { open: boolean; onClose: () 
                   <option value="everyNDays">{t("reminders.repeat.everyNDays")}</option>
                 </select>
               </div>
-              {repeat === "everyNDays" ? (
+              {repeat === "everyNDays" && (
                 <div>
                   <label className="label" htmlFor="m-n">{t("meds.everyNLabel")}</label>
                   <input id="m-n" name="intervalDays" type="number" min={1} defaultValue={2} className="input" />
                 </div>
-              ) : (
-                <div>
-                  <label className="label" htmlFor="m-start">{t("meds.starting")}</label>
-                  <input id="m-start" name="start" type="date" className="input" defaultValue={format(new Date(), "yyyy-MM-dd")} required />
-                </div>
               )}
-            </div>
-            {repeat === "everyNDays" && (
               <div>
-                <label className="label" htmlFor="m-start2">{t("meds.starting")}</label>
-                <input id="m-start2" name="start" type="date" className="input" defaultValue={format(new Date(), "yyyy-MM-dd")} required />
+                <label className="label" htmlFor="m-start">{t("meds.starting")}</label>
+                <input id="m-start" name="start" type="date" className="input" value={start} onChange={(e) => setStart(e.target.value)} required />
               </div>
-            )}
+              <div>
+                <label className="label" htmlFor="m-end">{t("meds.until")}</label>
+                <input id="m-end" name="end" type="date" className="input" min={start} />
+              </div>
+            </div>
             <fieldset>
               <legend className="label">{t("meds.times")}</legend>
               <div className="flex flex-wrap items-center gap-2">

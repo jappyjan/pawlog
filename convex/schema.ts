@@ -217,6 +217,7 @@ export default defineSchema({
     dosage: v.optional(v.string()),
     notes: v.optional(v.string()),
     active: v.boolean(),
+    endsOn: v.optional(v.string()), // YYYY-MM-DD, last day of the course (inclusive)
   }).index("by_dog", ["dogId"]),
 
   reminders: defineTable({
@@ -229,6 +230,7 @@ export default defineSchema({
     timezone: v.string(),
     repeat,
     intervalDays: v.optional(v.number()),
+    endsAt: v.optional(v.number()), // repeating reminders stop after this instant
     done: v.boolean(),
     createdBy: v.id("users"),
     scheduledJobId: v.optional(v.id("_scheduled_functions")),
