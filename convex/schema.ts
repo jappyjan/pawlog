@@ -97,6 +97,8 @@ export const mealFields = {
   appetite: v.optional(v.union(v.literal("all"), v.literal("most"), v.literal("some"), v.literal("none"))),
 };
 
+export const routineType = v.union(v.literal("meal"), v.literal("walk"), v.literal("potty"), v.literal("other"));
+
 /** Push text in every supported language; each recipient gets theirs. */
 export const localized = v.object({ en: v.string(), de: v.string() });
 
@@ -189,6 +191,22 @@ export default defineSchema({
     items: v.array(mealItem),
     kcal: v.optional(v.number()),
     order: v.number(),
+  }).index("by_dog", ["dogId"]),
+
+  // Recurring daily routine per dog (feeding, walk, potty break, …); each one pushes the household.
+  routines: defineTable({
+    householdId: v.id("households"),
+    dogId: v.id("dogs"),
+    type: routineType,
+    time: v.string(), // "HH:MM" local time in `timezone`
+    timezone: v.string(),
+    days: v.optional(v.array(v.number())), // weekdays 0 (Sun) … 6 (Sat); unset = every day
+    notifyBefore: v.number(), // minutes before `time` to send the push (0 = on time)
+    mealId: v.optional(v.id("meals")), // meal routines: the saved meal to give, e.g. "Breakfast"
+    label: v.optional(v.string()), // custom name; required for "other"
+    enabled: v.boolean(),
+    nextNotifyAt: v.optional(v.number()),
+    scheduledJobId: v.optional(v.id("_scheduled_functions")),
   }).index("by_dog", ["dogId"]),
 
   medications: defineTable({

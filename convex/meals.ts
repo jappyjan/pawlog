@@ -54,7 +54,10 @@ export const update = mutation({
 export const remove = mutation({
   args: { mealId: v.id("meals") },
   handler: async (ctx, { mealId }) => {
-    await own(ctx, mealId);
+    const meal = await own(ctx, mealId);
+    // Routines that pointed at this meal keep its name as their label.
+    for (const f of await ctx.db.query("routines").withIndex("by_dog", (q) => q.eq("dogId", meal.dogId)).collect())
+      if (f.mealId === mealId) await ctx.db.patch(f._id, { mealId: undefined, label: f.label ?? meal.name });
     await ctx.db.delete(mealId);
   },
 });

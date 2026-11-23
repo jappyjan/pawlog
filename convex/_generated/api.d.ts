@@ -20,6 +20,7 @@ import type * as medications from "../medications.js";
 import type * as notify from "../notify.js";
 import type * as push from "../push.js";
 import type * as reminders from "../reminders.js";
+import type * as routines from "../routines.js";
 import type * as schedule from "../schedule.js";
 import type * as users from "../users.js";
 
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   notify: typeof notify;
   push: typeof push;
   reminders: typeof reminders;
+  routines: typeof routines;
   schedule: typeof schedule;
   users: typeof users;
 }>;

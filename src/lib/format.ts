@@ -93,6 +93,7 @@ const SERVER_ERRORS: Record<string, keyof typeof import("../i18n/en").en.errors.
   "Dog not found": "dogNotFound",
   "Food not found": "notFound",
   "Meal not found": "notFound",
+  "Routine not found": "notFound",
   "Reminder not found": "notFound",
   "Document not found": "notFound",
   "Pick a file first": "pickFile",

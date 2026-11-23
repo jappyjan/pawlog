@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { clean, requireDog } from "./lib";
 import { completeReminder, scheduleNotification } from "./reminders";
 
@@ -150,12 +151,17 @@ export const giveDose = mutation({
       amount: med.dosage,
       notes: notes?.trim() || undefined,
     });
-    const soon = Date.now() + 3 * 3600_000;
-    const reminders = await ctx.db
-      .query("reminders")
-      .withIndex("by_medication", (q) => q.eq("medicationId", medicationId))
-      .collect();
-    const due = reminders.filter((r) => !r.done && r.dueAt <= soon).sort((a, b) => a.dueAt - b.dueAt);
-    if (due[0]) await completeReminder(ctx, due[0]);
+    await tickDueReminder(ctx, medicationId);
   },
 });
+
+/** A dose was just given: tick off this med's reminder that is due (or due within 3h). */
+export async function tickDueReminder(ctx: MutationCtx, medicationId: Id<"medications">) {
+  const soon = Date.now() + 3 * 3600_000;
+  const reminders = await ctx.db
+    .query("reminders")
+    .withIndex("by_medication", (q) => q.eq("medicationId", medicationId))
+    .collect();
+  const due = reminders.filter((r) => !r.done && r.dueAt <= soon).sort((a, b) => a.dueAt - b.dueAt);
+  if (due[0]) await completeReminder(ctx, due[0]);
+}

@@ -11,6 +11,7 @@ import { dayLabel, errorMessage, fmt, fromLocalInput, time, toLocalInput, tz } f
 import { Sheet } from "../components/Sheet";
 import { useToast } from "../components/Toast";
 import { PushCard } from "../components/PushCard";
+import { RoutineList } from "../components/RoutineList";
 import { useTranslation } from "react-i18next";
 
 type R = Doc<"reminders">;
@@ -37,6 +38,7 @@ export function Reminders() {
   const now = useNow();
   const { t } = useTranslation();
   const TEMPLATES = templates();
+  const { dog } = useApp();
   const [edit, setEdit] = useState<{ r?: R; template?: Template } | null>(null);
   const [showDone, setShowDone] = useState(false);
 
@@ -59,6 +61,8 @@ export function Reminders() {
       </div>
 
       <PushCard compact />
+
+      <RoutineList title={t("routines.title")} empty={t("routines.empty", { name: dog.name })} pushHint={false} />
 
       {reminders?.length === 0 && (
         <section className="card p-4">

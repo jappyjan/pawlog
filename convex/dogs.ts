@@ -56,6 +56,16 @@ export const setPhoto = mutation({
   args: { dogId: v.id("dogs"), storageId: v.id("_storage") },
   handler: async (ctx, { dogId, storageId }) => {
     const { dog } = await requireDog(ctx, dogId);
+    for (const f of await ctx.db
+      .query("routines")
+      .withIndex("by_dog", (q) => q.eq("dogId", dogId))
+      .collect()) {
+      if (f.scheduledJobId) {
+        const job = await ctx.db.system.get(f.scheduledJobId);
+        if (job?.state.kind === "pending") await ctx.scheduler.cancel(f.scheduledJobId);
+      }
+      await ctx.db.delete(f._id);
+    }
     if (dog.photoId) await ctx.storage.delete(dog.photoId);
     await ctx.db.patch(dogId, { photoId: storageId });
   },

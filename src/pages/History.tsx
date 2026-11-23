@@ -67,7 +67,7 @@ export function History() {
       )}
       {status === "LoadingMore" && <p className="text-center text-muted">{t("common.loading")}</p>}
 
-      <EventSheet open={sheet !== null} onClose={() => setSheet(null)} event={sheet?.event} />
+      <EventSheet open={sheet !== null} onClose={() => setSheet(null)} event={sheet?.event} past />
     </div>
   );
 }

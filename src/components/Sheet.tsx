@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import i18n from "../i18n";
 
 /** Native modal <dialog>: bottom sheet on phones, card on desktop. */
@@ -8,11 +8,14 @@ export function Sheet({
   open,
   onClose,
   title,
+  onBack,
   children,
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
+  /** Shows a back arrow before the title (multi-step sheets). */
+  onBack?: () => void;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -60,9 +63,16 @@ export function Sheet({
       {open && (
         <div className="pb-safe">
           <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-card px-5 pb-2 pt-4">
-            <h2 id={titleId} className="text-lg font-bold">
-              {title}
-            </h2>
+            <div className="flex min-w-0 items-center gap-1">
+              {onBack && (
+                <button type="button" className="btn-ghost -ml-2 size-10 shrink-0 p-0" aria-label={i18n.t("common.back")} onClick={onBack}>
+                  <ChevronLeft className="size-5" />
+                </button>
+              )}
+              <h2 id={titleId} className="truncate text-lg font-bold">
+                {title}
+              </h2>
+            </div>
             <button type="button" className="btn-ghost -mr-2 size-10 p-0" aria-label={i18n.t("common.close")} onClick={() => ref.current?.close()}>
               <X className="size-5" />
             </button>

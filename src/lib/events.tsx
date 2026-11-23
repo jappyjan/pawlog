@@ -30,12 +30,12 @@ export const EVENT_META: Record<EventType, { icon: LucideIcon | null; emoji: str
   note: { icon: NotebookPen, emoji: "📝", tint: "bg-stone-500/15 text-stone-700 dark:text-stone-300" },
 };
 
-export function EventIcon({ type, treat, className = "" }: { type: EventType; treat?: boolean; className?: string }) {
+export function EventIcon({ type, treat, large, className = "" }: { type: EventType; treat?: boolean; large?: boolean; className?: string }) {
   const m = EVENT_META[type];
   const Icon = treat ? Bone : m.icon;
   return (
-    <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${m.tint} ${className}`} aria-hidden>
-      {Icon ? <Icon className="size-5" /> : <span className="text-lg leading-none">{m.emoji}</span>}
+    <span className={`grid shrink-0 place-items-center ${large ? "size-12 rounded-2xl" : "size-10 rounded-xl"} ${m.tint} ${className}`} aria-hidden>
+      {Icon ? <Icon className={large ? "size-6" : "size-5"} /> : <span className={`${large ? "text-2xl" : "text-lg"} leading-none`}>{m.emoji}</span>}
     </span>
   );
 }

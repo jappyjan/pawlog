@@ -70,7 +70,7 @@ export function MealFields({
   value: Meal;
   onChange: (m: Meal) => void;
   dogFood?: string;
-  /** Editing a saved meal: no meal/treat switch, no appetite. */
+  /** Editing a saved meal: no appetite. */
   preset?: boolean;
 }) {
   const { t } = useTranslation();
@@ -84,26 +84,6 @@ export function MealFields({
 
   return (
     <div className="space-y-4">
-      {!preset && <div className="grid grid-cols-2 rounded-xl bg-bg p-1" role="radiogroup" aria-label={t("meal.kindLabel")}>
-        {(["meal", "treat"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={value.mealKind === k}
-            onClick={() => {
-              if (k === value.mealKind) return;
-              const pristine = value.rows.every((r) => !r.name && !r.kcal);
-              const first = active.find((f) => (f.kind === "treat") === (k === "treat"));
-              onChange({ ...value, mealKind: k, rows: pristine ? [emptyRow(first)] : value.rows });
-            }}
-            className={`rounded-lg py-2 text-sm font-semibold transition ${value.mealKind === k ? "bg-card shadow-sm" : "text-muted"}`}
-          >
-            {k === "meal" ? `🍖 ${t("events.meal")}` : `🦴 ${t("meal.treatSnack")}`}
-          </button>
-        ))}
-      </div>}
-
       <fieldset className="space-y-2">
         <legend className="label">{isTreat ? t("meal.whatTreat") : t("meal.whatFood")} {!preset && <span className="font-normal text-muted">({t("common.optional")})</span>}</legend>
         {value.rows.map((r) => {

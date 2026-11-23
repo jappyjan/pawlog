@@ -33,3 +33,21 @@ export function nextOccurrence(rule: Rule, after: number): number | null {
   }
   return null;
 }
+
+/** Next time a routine at `time` ("HH:MM" in `timezone`, on `days` or every day) should
+ *  notify, `notifyBefore` minutes early, strictly after `after`. Null if no day matches. */
+export function nextRoutineNotify(
+  r: { time: string; timezone: string; notifyBefore: number; days?: number[] },
+  after: number,
+): number | null {
+  const [h, m] = r.time.split(":").map(Number);
+  const today = new TZDate(after, r.timezone);
+  for (let d = 0; d <= 8; d++) {
+    const day = addDays(today, d);
+    if (r.days?.length && !r.days.includes(day.getDay())) continue;
+    const at = new TZDate(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0, 0, r.timezone).getTime();
+    const t = at - r.notifyBefore * 60_000;
+    if (t > after) return t;
+  }
+  return null;
+}

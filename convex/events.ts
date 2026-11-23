@@ -5,6 +5,7 @@ import { clean, requireDog } from "./lib";
 import { eventType, mealFields, stoolFields } from "./schema";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
+import { tickDueReminder } from "./medications";
 
 const eventFields = {
   durationMin: v.optional(v.number()),
@@ -51,6 +52,10 @@ export const log = mutation({
     });
     if (NOTIFY_TYPES.has(type) && (at === undefined || Date.now() - at < 30 * 60_000)) {
       await ctx.scheduler.runAfter(0, internal.notify.activity, { eventId });
+    }
+    // A dose logged as given recently counts for its reminder, same as "Give" on the med.
+    if (type === "medication" && rest.medicationId && (at === undefined || Date.now() - at < 3 * 3600_000)) {
+      await tickDueReminder(ctx, rest.medicationId);
     }
     return eventId;
   },

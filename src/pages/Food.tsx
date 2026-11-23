@@ -8,6 +8,7 @@ import type { Doc } from "../../convex/_generated/dataModel";
 import { useApp } from "../lib/app";
 import { FoodSheet } from "../components/FoodSheet";
 import { SavedMealSheet } from "../components/SavedMealSheet";
+import { RoutineList } from "../components/RoutineList";
 import { itemText, kindMeta, unitShort, type Food } from "../lib/nutrition";
 import { useLogMeal } from "../lib/useLogMeal";
 
@@ -54,6 +55,8 @@ export function FoodPage() {
           <Link to="/dog" className="font-semibold text-brand">{t("foodPage.setGoal")}</Link>
         </p>
       </section>
+
+      <RoutineList type="meal" title={t("routines.feedingTitle")} empty={t("routines.feedingEmpty", { name: dog.name })} />
 
       <section className="card p-4">
         <div className="mb-1 flex items-center justify-between gap-2">
