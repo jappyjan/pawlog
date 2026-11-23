@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@theme {
+  --font-sans: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-bg: #fbf7f1;
+  --color-card: #ffffff;
+  --color-ink: #2a211b;
+  --color-muted: #8a7d72;
+  --color-line: #eee5da;
+  --color-brand: #e9773a;
+  --color-brand-ink: #b9531c;
+  --color-brand-soft: #fde9dc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1b1714;
+    --color-card: #26201c;
+    --color-ink: #f4ede6;
+    --color-muted: #a3968b;
+    --color-line: #3a312b;
+    --color-brand: #f08a50;
+    --color-brand-ink: #ffb084;
+    --color-brand-soft: #3b2619;
+  }
+}
+
+html {
+  color-scheme: light dark;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Native <dialog> as a bottom sheet on phones, centered card on larger screens. */
+dialog.sheet {
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 92dvh;
+  border: 0;
+  padding: 0;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.15);
+}
+@media (min-width: 640px) {
+  dialog.sheet { margin: auto; border-radius: 1.5rem; }
+}
+dialog.sheet:modal { overscroll-behavior: contain; }
+dialog.sheet::backdrop {
+  background: rgb(20 12 6 / 0.45);
+  backdrop-filter: blur(2px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+dialog.sheet[open] { animation: sheet-in 0.22s cubic-bezier(.2,.9,.3,1); }
+@keyframes sheet-in { from { transform: translateY(24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { dialog.sheet[open] { animation: none; } }
+
+@utility card {
+  @apply rounded-2xl bg-card border border-line;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold transition active:scale-[.98] disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand text-white;
+}
+@utility btn-ghost {
+  @apply btn bg-transparent text-ink hover:bg-line/60;
+}
+@utility btn-soft {
+  @apply btn bg-brand-soft text-brand-ink;
+}
+@utility btn-danger {
+  @apply btn bg-red-500/10 text-red-600 dark:text-red-400;
+}
+@utility input {
+  @apply w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-ink outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/25;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium text-muted;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium;
+}
+@utility chip-on {
+  @apply border-brand bg-brand-soft text-brand-ink;
+}
