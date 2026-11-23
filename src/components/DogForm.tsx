@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Doc } from "../../convex/_generated/dataModel";
 
 export type DogFormValues = {
@@ -52,51 +53,52 @@ function F({ name, label, d, ...rest }: { name: keyof Doc<"dogs">; label: string
 }
 
 export function DogFields({ dog, compact }: { dog?: Partial<Doc<"dogs">>; compact?: boolean }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
-      <F name="name" label="Name *" d={dog} required autoFocus={!dog?.name} />
+      <F name="name" label={`${t("common.name")} *`} d={dog} required autoFocus={!dog?.name} />
       <div className="grid grid-cols-2 gap-3">
-        <F name="breed" label="Breed" d={dog} />
-        <F name="birthDate" label="Birthday" type="date" d={dog} />
+        <F name="breed" label={t("dog.breed")} d={dog} />
+        <F name="birthDate" label={t("dog.birthday")} type="date" d={dog} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label" htmlFor="dog-sex">Sex</label>
+          <label className="label" htmlFor="dog-sex">{t("dog.sex")}</label>
           <select id="dog-sex" name="sex" className="input" defaultValue={dog?.sex ?? ""}>
             <option value="">—</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
+            <option value="male">{t("dog.male")}</option>
+            <option value="female">{t("dog.female")}</option>
           </select>
         </div>
         <label className="flex items-end gap-2 pb-3 text-sm font-medium">
           <input type="checkbox" name="neutered" defaultChecked={dog?.neutered} className="size-5 accent-brand" />
-          Neutered / spayed
+          {t("dog.neutered")}
         </label>
       </div>
       {!compact && (
         <>
           <div className="grid grid-cols-2 gap-3">
-            <F name="color" label="Color / markings" d={dog} />
-            <F name="walkGoalPerDay" label="Walks per day goal" type="number" min={0} max={10} d={dog} />
+            <F name="color" label={t("dog.color")} d={dog} />
+            <F name="walkGoalPerDay" label={t("dog.walkGoal")} type="number" min={0} max={10} d={dog} />
           </div>
-          <h3 className="pt-2 text-sm font-bold uppercase tracking-wide text-muted">Papers & IDs</h3>
-          <F name="microchip" label="Microchip number" d={dog} inputMode="numeric" />
+          <h3 className="pt-2 text-sm font-bold uppercase tracking-wide text-muted">{t("dog.papers")}</h3>
+          <F name="microchip" label={t("dog.microchip")} d={dog} inputMode="numeric" />
           <div className="grid grid-cols-2 gap-3">
-            <F name="registrationNo" label="Registration / tax no." d={dog} />
-            <F name="insurance" label="Insurance policy" d={dog} />
+            <F name="registrationNo" label={t("dog.registration")} d={dog} />
+            <F name="insurance" label={t("dog.insurance")} d={dog} />
           </div>
-          <h3 className="pt-2 text-sm font-bold uppercase tracking-wide text-muted">Vet</h3>
+          <h3 className="pt-2 text-sm font-bold uppercase tracking-wide text-muted">{t("dog.vet")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <F name="vetName" label="Vet / clinic" d={dog} />
-            <F name="vetPhone" label="Vet phone" type="tel" d={dog} />
+            <F name="vetName" label={t("dog.vetName")} d={dog} />
+            <F name="vetPhone" label={t("dog.vetPhone")} type="tel" d={dog} />
           </div>
-          <h3 className="pt-2 text-sm font-bold uppercase tracking-wide text-muted">Care</h3>
+          <h3 className="pt-2 text-sm font-bold uppercase tracking-wide text-muted">{t("dog.care")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <F name="food" label="Food & portions" d={dog} placeholder="e.g. 2× 120 g kibble" />
-            <F name="kcalGoalPerDay" label="Calories per day goal" type="number" min={0} max={10000} inputMode="numeric" d={dog} placeholder="e.g. 900" />
+            <F name="food" label={t("dog.food")} d={dog} placeholder={t("dog.foodPh")} />
+            <F name="kcalGoalPerDay" label={t("dog.kcalGoal")} type="number" min={0} max={10000} inputMode="numeric" d={dog} placeholder={t("dog.kcalGoalPh")} />
           </div>
           <div>
-            <label className="label" htmlFor="dog-notes">Notes (allergies, quirks…)</label>
+            <label className="label" htmlFor="dog-notes">{t("dog.notes")}</label>
             <textarea id="dog-notes" name="notes" rows={3} className="input" defaultValue={dog?.notes ?? ""} />
           </div>
         </>

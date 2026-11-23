@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { STOOL_COLORS, STOOL_FLAGS, STOOL_SCORES, stoolMeta, stoolScoreOf, TONE, type StoolColor, type StoolFlag } from "../lib/nutrition";
+import { useTranslation } from "react-i18next";
 
 export type Stool = { stoolScore?: number; stoolColor?: StoolColor; stoolFlags: StoolFlag[] };
 
@@ -21,42 +22,45 @@ export const stoolArgs = (s: Stool) => ({
 
 /** Everything optional: tap a score, tap it again to clear it. */
 export function StoolDetails({ value, onChange }: { value: Stool; onChange: (s: Stool) => void }) {
+  const { t } = useTranslation();
   const meta = stoolMeta(value.stoolScore);
   const extras = (value.stoolColor ? 1 : 0) + value.stoolFlags.length;
   return (
     <fieldset className="space-y-2">
-      <legend className="label">Consistency <span className="font-normal text-muted">(optional)</span></legend>
-      <div className="grid grid-cols-7 gap-1" role="radiogroup" aria-label="Fecal score 1 to 7">
+      <legend className="label">{t("stool.consistency")} <span className="font-normal text-muted">({t("common.optional")})</span></legend>
+      <div className="grid grid-cols-7 gap-1" role="radiogroup" aria-label={t("stool.scaleLabel")}>
         {STOOL_SCORES.map((s) => {
           const on = value.stoolScore === s.score;
+          const label = t(`stool.score.s${s.score}`);
+          const hint = t(`stool.hint.s${s.score}`);
           return (
             <button
               key={s.score}
               type="button"
               role="radio"
               aria-checked={on}
-              aria-label={`${s.score}: ${s.hint}`}
-              title={s.hint}
+              aria-label={`${s.score}: ${hint}`}
+              title={hint}
               onClick={() => onChange({ ...value, stoolScore: on ? undefined : s.score })}
               className={`flex flex-col items-center gap-1 rounded-xl border-2 py-2 transition ${on ? "border-brand bg-brand-soft" : "border-line"}`}
             >
               <span className={`size-2.5 rounded-full ${TONE[s.tone]}`} aria-hidden />
               <span className="text-base font-extrabold leading-none tabular-nums">{s.score}</span>
-              <span className="text-[10px] leading-none text-muted">{s.label}</span>
+              <span className="text-[10px] leading-none text-muted">{label}</span>
             </button>
           );
         })}
       </div>
       <p className="min-h-5 text-sm text-muted" aria-live="polite">
-        {meta ? meta.hint : "1 = hard · 2 = ideal · 7 = watery"}
+        {meta ? meta.hint : t("stool.scaleHint")}
       </p>
 
       <details className="group rounded-xl border border-line px-3 py-2" open={extras > 0 || undefined}>
         <summary className="cursor-pointer text-sm font-semibold">
-          Color & signs{extras > 0 && <span className="ml-1 text-brand">· {extras}</span>}
+          {t("stool.colorSigns")}{extras > 0 && <span className="ml-1 text-brand">· {extras}</span>}
         </summary>
         <div className="mt-3 space-y-3">
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("stool.colorLabel")}>
             {STOOL_COLORS.map((c) => {
               const on = value.stoolColor === c.id;
               return (
@@ -68,7 +72,7 @@ export function StoolDetails({ value, onChange }: { value: Stool; onChange: (s: 
                   onClick={() => onChange({ ...value, stoolColor: on ? undefined : c.id })}
                   className={`chip ${on ? "chip-on" : ""}`}
                 >
-                  <span className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: c.swatch }} aria-hidden /> {c.label}
+                  <span className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: c.swatch }} aria-hidden /> {t(`stool.color.${c.id}`)}
                 </button>
               );
             })}
@@ -86,7 +90,7 @@ export function StoolDetails({ value, onChange }: { value: Stool; onChange: (s: 
                   }
                   className={`chip ${on ? (f.warn ? "border-red-500 bg-red-500/15 text-red-700 dark:text-red-300" : "chip-on") : ""}`}
                 >
-                  {f.label}
+                  {t(`stool.flag.${f.id}`)}
                 </button>
               );
             })}

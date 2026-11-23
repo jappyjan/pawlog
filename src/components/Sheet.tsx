@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import i18n from "../i18n";
 
 /** Native modal <dialog>: bottom sheet on phones, card on desktop. */
 export function Sheet({
@@ -44,7 +46,9 @@ export function Sheet({
     };
   }, []);
 
-  return (
+  // Portal to <body>: a sheet opened from inside another sheet's <form> must not end up
+  // with a nested <form> in the DOM (the browser would do a native submit and reload).
+  return createPortal(
     <dialog
       ref={ref}
       className="sheet"
@@ -59,13 +63,14 @@ export function Sheet({
             <h2 id={titleId} className="text-lg font-bold">
               {title}
             </h2>
-            <button type="button" className="btn-ghost -mr-2 size-10 p-0" aria-label="Close" onClick={() => ref.current?.close()}>
+            <button type="button" className="btn-ghost -mr-2 size-10 p-0" aria-label={i18n.t("common.close")} onClick={() => ref.current?.close()}>
               <X className="size-5" />
             </button>
           </div>
           <div className="px-5 pb-6">{children}</div>
         </div>
       )}
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }

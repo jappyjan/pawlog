@@ -172,7 +172,11 @@ export const fire = internalMutation({
     await ctx.scheduler.runAfter(0, internal.push.sendToHousehold, {
       householdId: r.householdId,
       title: dog ? `${dog.name}: ${r.title}` : r.title,
-      body: r.notes ?? (r.medicationId ? "Time for medication 💊" : "Reminder 🐾"),
+      body: r.notes
+        ? { en: r.notes, de: r.notes }
+        : r.medicationId
+          ? { en: "Time for medication 💊", de: "Zeit für Medikamente 💊" }
+          : { en: "Reminder 🐾", de: "Erinnerung 🐾" },
       url: "/reminders",
       tag: `reminder-${r._id}`,
     });

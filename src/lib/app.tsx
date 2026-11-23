@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import i18n from "../i18n";
 
 export type Current = NonNullable<FunctionReturnType<typeof api.households.current>>;
 export type Dog = Current["dogs"][number];
@@ -54,10 +55,10 @@ export function AppProvider({ current, children }: { current: Current & { househ
         return m?.name ?? m?.username ?? "?";
       },
       memberName: (id) => {
-        if (!id) return "Someone";
-        if (id === current.me._id) return "You";
+        if (!id) return i18n.t("common.someone");
+        if (id === current.me._id) return i18n.t("common.you");
         const m = current.members.find((m) => m._id === id);
-        return m?.name ?? m?.username ?? "Someone";
+        return m?.name ?? m?.username ?? i18n.t("common.someone");
       },
     }),
     [current, dog],

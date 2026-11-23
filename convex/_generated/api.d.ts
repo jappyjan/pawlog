@@ -15,6 +15,7 @@ import type * as events from "../events.js";
 import type * as foods from "../foods.js";
 import type * as households from "../households.js";
 import type * as lib from "../lib.js";
+import type * as meals from "../meals.js";
 import type * as medications from "../medications.js";
 import type * as notify from "../notify.js";
 import type * as push from "../push.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   foods: typeof foods;
   households: typeof households;
   lib: typeof lib;
+  meals: typeof meals;
   medications: typeof medications;
   notify: typeof notify;
   push: typeof push;

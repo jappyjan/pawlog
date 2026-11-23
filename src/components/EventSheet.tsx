@@ -5,11 +5,12 @@ import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { Sheet } from "./Sheet";
 import { useApp } from "../lib/app";
-import { EVENT_META, eventLabel, type EventType } from "../lib/events";
+import { EVENT_META, eventLabel, eventTypeLabel, type EventType } from "../lib/events";
 import { errorMessage, fromLocalInput, toLocalInput } from "../lib/format";
 import { useToast } from "./Toast";
 import { StoolDetails, stoolArgs, useStool } from "./StoolDetails";
 import { initialMeal, mealArgs, MealFields, type Meal } from "./MealFields";
+import { useTranslation } from "react-i18next";
 
 const PICKABLE: EventType[] = ["walk", "pee", "poop", "meal", "weight", "medication", "vet", "symptom", "note"];
 
@@ -28,11 +29,12 @@ export function EventSheet({
   event?: Doc<"events">;
 }) {
   const { dog } = useApp();
+  const { t } = useTranslation();
   const last = useQuery(api.events.lastMeal, open ? { dogId: dog._id } : "skip");
   const foods = useQuery(api.foods.list, open ? {} : "skip");
   const ready = (last !== undefined && foods !== undefined) || !open;
   return (
-    <Sheet open={open} onClose={onClose} title={event ? `Edit ${eventLabel(event).toLowerCase()}` : "Log something"}>
+    <Sheet open={open} onClose={onClose} title={event ? t("log.edit", { what: eventLabel(event) }) : t("log.title")}>
       {open && ready && (
         <EventForm key={event?._id ?? `${initialType}${treat}`} initialType={initialType} event={event} onDone={onClose} meal0={initialMeal(event, last, foods, treat)} />
       )}
@@ -46,6 +48,7 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
   const log = useMutation(api.events.log);
   const update = useMutation(api.events.update);
   const remove = useMutation(api.events.remove);
+  const { t } = useTranslation();
   const meds = useQuery(api.medications.list, { dogId: dog._id });
   const [type, setType] = useState<EventType>(event?.type ?? initialType ?? "walk");
   const [pee, setPee] = useState(event?.pee ?? false);
@@ -77,12 +80,12 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
           ...(type === "medication" && { amount: String(fd.get("amount") ?? "") }),
           ...(type === "medication" && fd.get("medicationId") ? { medicationId: fd.get("medicationId") as Doc<"medications">["_id"] } : {}),
         };
-        if (type === "weight" && !fields.weightKg) return toast({ text: "Enter a weight", error: true });
+        if (type === "weight" && !fields.weightKg) return toast({ text: t("log.enterWeight"), error: true });
         setBusy(true);
         try {
           if (event) await update({ eventId: event._id, ...fields });
           else await log({ dogId: dog._id, type, ...fields });
-          toast({ text: event ? "Saved" : `${type === "meal" && meal.mealKind === "treat" ? "Treat" : EVENT_META[type].label} logged` });
+          toast({ text: event ? t("common.saved") : t("log.logged", { what: type === "meal" && meal.mealKind === "treat" ? t("events.treat") : eventTypeLabel(type) }) });
           onDone();
         } catch (err) {
           toast({ text: errorMessage(err), error: true });
@@ -92,24 +95,24 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
       }}
     >
       {!event && (
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Type">
-          {PICKABLE.map((t) => (
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("log.type")}>
+          {PICKABLE.map((ty) => (
             <button
-              key={t}
+              key={ty}
               type="button"
               role="radio"
-              aria-checked={type === t}
-              onClick={() => setType(t)}
-              className={`chip ${type === t ? "chip-on" : ""}`}
+              aria-checked={type === ty}
+              onClick={() => setType(ty)}
+              className={`chip ${type === ty ? "chip-on" : ""}`}
             >
-              <span aria-hidden>{EVENT_META[t].emoji}</span> {EVENT_META[t].label}
+              <span aria-hidden>{EVENT_META[ty].emoji}</span> {eventTypeLabel(ty)}
             </button>
           ))}
         </div>
       )}
 
       <div>
-        <label className="label" htmlFor="ev-at">When</label>
+        <label className="label" htmlFor="ev-at">{t("log.when")}</label>
         <input id="ev-at" name="at" type="datetime-local" className="input" defaultValue={toLocalInput(event?.at ?? Date.now())} required />
       </div>
 
@@ -117,12 +120,12 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
         <>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="ev-dur">Duration (min)</label>
+              <label className="label" htmlFor="ev-dur">{t("log.duration")}</label>
               <input id="ev-dur" name="durationMin" type="number" inputMode="numeric" min={1} className="input" defaultValue={event?.durationMin ?? 30} />
             </div>
             <div>
-              <label className="label" htmlFor="ev-km">Distance (km)</label>
-              <input id="ev-km" name="distanceKm" inputMode="decimal" className="input" defaultValue={event?.distanceKm ?? ""} placeholder="optional" />
+              <label className="label" htmlFor="ev-km">{t("walk.distance")}</label>
+              <input id="ev-km" name="distanceKm" inputMode="decimal" className="input" defaultValue={event?.distanceKm ?? ""} placeholder={t("common.optional")} />
             </div>
           </div>
           <PottyToggles pee={pee} poop={poop} setPee={setPee} setPoop={setPoop} />
@@ -134,7 +137,7 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
 
       {type === "weight" && (
         <div>
-          <label className="label" htmlFor="ev-kg">Weight (kg)</label>
+          <label className="label" htmlFor="ev-kg">{t("log.weightKg")}</label>
           <input id="ev-kg" name="weightKg" inputMode="decimal" className="input text-2xl font-bold" defaultValue={event?.weightKg ?? ""} autoFocus required />
         </div>
       )}
@@ -142,17 +145,17 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
       {type === "medication" && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label" htmlFor="ev-med">Medication</label>
+            <label className="label" htmlFor="ev-med">{t("events.medication")}</label>
             <select id="ev-med" name="medicationId" className="input" defaultValue={event?.medicationId ?? ""}>
-              <option value="">Other / one-off</option>
+              <option value="">{t("log.otherMed")}</option>
               {meds?.map((m) => (
                 <option key={m._id} value={m._id}>{m.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="label" htmlFor="ev-amt">Dose</label>
-            <input id="ev-amt" name="amount" className="input" defaultValue={event?.amount ?? ""} placeholder="e.g. 1 tablet" />
+            <label className="label" htmlFor="ev-amt">{t("log.dose")}</label>
+            <input id="ev-amt" name="amount" className="input" defaultValue={event?.amount ?? ""} placeholder={t("log.dosePh")} />
           </div>
         </div>
       )}
@@ -160,13 +163,13 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
       {type === "meal" && (
         <>
           <MealFields value={meal} onChange={setMeal} dogFood={dog.food} />
-          {event?.amount && <p className="text-sm text-muted">Earlier note: {event.amount}</p>}
+          {event?.amount && <p className="text-sm text-muted">{t("log.earlierNote")}: {event.amount}</p>}
         </>
       )}
 
       <div>
         <label className="label" htmlFor="ev-notes">
-          {type === "vet" ? "What happened at the vet?" : type === "symptom" ? "Symptoms" : "Notes"}
+          {type === "vet" ? t("log.vetNotes") : type === "symptom" ? t("log.symptoms") : t("common.notes")}
         </label>
         <textarea id="ev-notes" name="notes" rows={type === "vet" || type === "symptom" || type === "note" ? 4 : 2} className="input" defaultValue={event?.notes ?? ""} />
       </div>
@@ -178,25 +181,26 @@ function EventForm({ initialType, event, onDone, meal0 }: { initialType?: EventT
             className="btn-danger"
             onClick={async () => {
               await remove({ eventId: event._id });
-              toast({ text: "Deleted" });
+              toast({ text: t("common.deleted") });
               onDone();
             }}
           >
-            <Trash2 className="size-4" /> Delete
+            <Trash2 className="size-4" /> {t("common.delete")}
           </button>
         )}
-        <button className="btn-primary flex-1" disabled={busy}>{event ? "Save" : "Log it"}</button>
+        <button className="btn-primary flex-1" disabled={busy}>{event ? t("common.save") : t("log.logIt")}</button>
       </div>
     </form>
   );
 }
 
 export function PottyToggles({ pee, poop, setPee, setPoop }: { pee: boolean; poop: boolean; setPee: (b: boolean) => void; setPoop: (b: boolean) => void }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-2 gap-3">
       {[
-        { on: pee, set: setPee, label: "Pee", emoji: "💧" },
-        { on: poop, set: setPoop, label: "Poop", emoji: "💩" },
+        { on: pee, set: setPee, label: t("events.pee"), emoji: "💧" },
+        { on: poop, set: setPoop, label: t("events.poop"), emoji: "💩" },
       ].map((b) => (
         <button
           key={b.label}

@@ -8,10 +8,13 @@ import { useToast } from "../components/Toast";
 import { PushCard } from "../components/PushCard";
 import { errorMessage } from "../lib/format";
 import { UserBadge } from "../components/Avatar";
+import { LanguageSwitch } from "../components/LanguageSwitch";
+import { useTranslation } from "react-i18next";
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
 function InstallButton() {
+  const { t } = useTranslation();
   const [evt, setEvt] = useState<BIPEvent | null>(null);
   useEffect(() => {
     const h = (e: Event) => {
@@ -32,7 +35,7 @@ function InstallButton() {
         await e.prompt();
       }}
     >
-      <Download className="size-4" /> Install Pawlog app
+      <Download className="size-4" /> {t("settings.install")}
     </button>
   );
 }
@@ -48,65 +51,67 @@ export function SettingsPage() {
   const setActivity = useMutation(api.notify.setActivityNotifications);
   const changePassword = useMutation(api.auth.changePassword);
   const toast = useToast();
+  const { t } = useTranslation();
 
-  const shareText = `Join our dog household on Pawlog 🐾\nInvite code: ${household.inviteCode}\n${location.origin}`;
+  const shareText = t("settings.shareText", { code: household.inviteCode, url: location.origin });
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-extrabold">Settings</h1>
+      <h1 className="text-2xl font-extrabold">{t("nav.settings")}</h1>
 
       <section className="card space-y-3 p-4">
-        <h2 className="font-bold">You</h2>
+        <h2 className="font-bold">{t("settings.you")}</h2>
         <form
           className="flex gap-2"
           onSubmit={async (e) => {
             e.preventDefault();
             await setName({ name: String(new FormData(e.currentTarget).get("name")) });
-            toast({ text: "Saved" });
+            toast({ text: t("common.saved") });
           }}
         >
-          <label className="sr-only" htmlFor="s-name">Display name</label>
-          <input id="s-name" name="name" className="input" defaultValue={me.name ?? ""} placeholder="Display name" />
-          <button className="btn-soft">Save</button>
+          <label className="sr-only" htmlFor="s-name">{t("settings.displayName")}</label>
+          <input id="s-name" name="name" className="input" defaultValue={me.name ?? ""} placeholder={t("settings.displayName")} />
+          <button className="btn-soft">{t("common.save")}</button>
         </form>
-        <p className="text-sm text-muted">Signed in as <b>{me.username}</b></p>
+        <p className="text-sm text-muted">{t("settings.signedInAs")} <b>{me.username}</b></p>
+        <LanguageSwitch />
       </section>
 
       <section className="card space-y-3 p-4">
-        <h2 className="font-bold">Household</h2>
+        <h2 className="font-bold">{t("settings.household")}</h2>
         <form
           className="flex gap-2"
           onSubmit={async (e) => {
             e.preventDefault();
             await rename({ name: String(new FormData(e.currentTarget).get("hh")) });
-            toast({ text: "Saved" });
+            toast({ text: t("common.saved") });
           }}
         >
-          <label className="sr-only" htmlFor="s-hh">Household name</label>
+          <label className="sr-only" htmlFor="s-hh">{t("onboarding.household")}</label>
           <input id="s-hh" name="hh" className="input" defaultValue={household.name} />
-          <button className="btn-soft">Save</button>
+          <button className="btn-soft">{t("common.save")}</button>
         </form>
 
         <div className="rounded-xl bg-bg p-4 text-center">
-          <p className="text-sm text-muted">Invite code — your partner signs up, then enters this</p>
+          <p className="text-sm text-muted">{t("settings.inviteHint")}</p>
           <p className="my-2 font-mono text-3xl font-extrabold tracking-[0.25em]">{household.inviteCode}</p>
           <div className="flex justify-center gap-2">
-            <button type="button" className="chip" onClick={() => void navigator.clipboard.writeText(household.inviteCode).then(() => toast({ text: "Copied" }))}>
-              <Copy className="size-4" /> Copy
+            <button type="button" className="chip" onClick={() => void navigator.clipboard.writeText(household.inviteCode).then(() => toast({ text: t("common.copied") }))}>
+              <Copy className="size-4" /> {t("common.copy")}
             </button>
             {"share" in navigator && (
               <button type="button" className="chip" onClick={() => void navigator.share({ text: shareText }).catch(() => {})}>
-                <Share2 className="size-4" /> Share
+                <Share2 className="size-4" /> {t("common.share")}
               </button>
             )}
             <button
               type="button"
               className="chip"
               onClick={() => {
-                if (confirm("Make a new code? The old one stops working.")) void regen();
+                if (confirm(t("settings.newCodeConfirm"))) void regen();
               }}
             >
-              <RefreshCw className="size-4" /> New
+              <RefreshCw className="size-4" /> {t("settings.newCode")}
             </button>
           </div>
         </div>
@@ -116,15 +121,15 @@ export function SettingsPage() {
             <li key={m._id} className="flex items-center gap-3 py-2">
               <UserBadge name={m.name ?? m.username ?? "?"} id={m._id} />
               <span className="flex-1">
-                {m.name ?? m.username} {m._id === me._id && <span className="text-muted">(you)</span>}
+                {m.name ?? m.username} {m._id === me._id && <span className="text-muted">({t("settings.youShort")})</span>}
               </span>
               {m._id !== me._id && (
                 <button
                   type="button"
                   className="btn-ghost size-9 p-0"
-                  aria-label={`Remove ${m.name}`}
+                  aria-label={t("settings.remove", { name: m.name ?? m.username })}
                   onClick={() => {
-                    if (confirm(`Remove ${m.name ?? m.username} from the household?`)) void removeMember({ userId: m._id });
+                    if (confirm(t("settings.removeConfirm", { name: m.name ?? m.username }))) void removeMember({ userId: m._id });
                   }}
                 >
                   <UserMinus className="size-4" />
@@ -136,12 +141,12 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-bold">Notifications</h2>
+        <h2 className="font-bold">{t("settings.notifications")}</h2>
         <PushCard />
         <label className="card flex items-center gap-3 p-4">
           <span className="flex-1 text-sm">
-            <span className="block font-semibold">Tell me when others log walks, meals & meds</span>
-            <span className="text-muted">So nobody feeds the dog twice.</span>
+            <span className="block font-semibold">{t("settings.activity")}</span>
+            <span className="text-muted">{t("settings.activitySub")}</span>
           </span>
           <input type="checkbox" className="size-6 accent-brand" checked={!!me.notifyActivity} onChange={(e) => void setActivity({ enabled: e.target.checked })} />
         </label>
@@ -150,7 +155,7 @@ export function SettingsPage() {
       <InstallButton />
 
       <details className="card p-4">
-        <summary className="cursor-pointer font-bold">Change password</summary>
+        <summary className="cursor-pointer font-bold">{t("settings.changePassword")}</summary>
         <form
           className="mt-3 space-y-3"
           onSubmit={async (e) => {
@@ -160,7 +165,7 @@ export function SettingsPage() {
             try {
               const res = await changePassword({ currentPassword: String(fd.get("cur")), newPassword: String(fd.get("new")) });
               if ((res as { success: boolean }).success) {
-                toast({ text: "Password changed" });
+                toast({ text: t("settings.passwordChanged") });
                 form.reset();
               } else toast({ text: ((res as { userError: { error: string } }).userError.error).replaceAll("_", " ").toLowerCase(), error: true });
             } catch (err) {
@@ -168,21 +173,21 @@ export function SettingsPage() {
             }
           }}
         >
-          <input name="cur" type="password" className="input" placeholder="Current password" autoComplete="current-password" required aria-label="Current password" />
-          <input name="new" type="password" className="input" placeholder="New password" autoComplete="new-password" minLength={8} required aria-label="New password" />
-          <button className="btn-soft w-full">Change</button>
+          <input name="cur" type="password" className="input" placeholder={t("settings.currentPassword")} autoComplete="current-password" required aria-label={t("settings.currentPassword")} />
+          <input name="new" type="password" className="input" placeholder={t("settings.newPassword")} autoComplete="new-password" minLength={8} required aria-label={t("settings.newPassword")} />
+          <button className="btn-soft w-full">{t("settings.change")}</button>
         </form>
       </details>
 
       <div className="flex flex-col gap-2">
         <button type="button" className="btn-ghost w-full" onClick={() => void signOut()}>
-          <LogOut className="size-4" /> Sign out
+          <LogOut className="size-4" /> {t("settings.signOut")}
         </button>
         <button
           type="button"
           className="btn-ghost w-full text-sm text-red-600"
           onClick={async () => {
-            if (!confirm("Leave this household? You'll lose access to its dogs.")) return;
+            if (!confirm(t("settings.leaveConfirm"))) return;
             try {
               await leave();
             } catch (err) {
@@ -190,10 +195,10 @@ export function SettingsPage() {
             }
           }}
         >
-          Leave household
+          {t("settings.leave")}
         </button>
       </div>
-      <p className="pb-4 text-center text-xs text-muted">Pawlog · made with 🧡 for good dogs</p>
+      <p className="pb-4 text-center text-xs text-muted">{t("settings.footer")}</p>
     </div>
   );
 }

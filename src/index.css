@@ -30,7 +30,17 @@
 html {
   color-scheme: light dark;
   -webkit-tap-highlight-color: transparent;
+  /* No double-tap zoom when tapping buttons quickly; pinch-zoom still works. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+/* Nothing may widen the page sideways (iOS then zooms out / pans). */
+html, body { overflow-x: clip; }
+/* iOS Safari zooms into any field under 16px on focus. */
+input, select, textarea { font-size: max(16px, 1em); }
+/* Keep the page behind an open sheet from scrolling. */
+html:has(dialog[open]) { overflow: hidden; }
 body {
   background: var(--color-bg);
   color: var(--color-ink);

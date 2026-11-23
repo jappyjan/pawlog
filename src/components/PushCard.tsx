@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { currentSubscription, isIOS, isStandalone, pushSupported, subscribePush, subscriptionKeys } from "../lib/push";
 import { errorMessage } from "../lib/format";
 import { useToast } from "./Toast";
+import { useTranslation } from "react-i18next";
 
 export function usePushState() {
   const [endpoint, setEndpoint] = useState<string | null | undefined>(undefined);
@@ -21,26 +22,27 @@ export function PushCard({ compact }: { compact?: boolean }) {
   const unsubscribe = useMutation(api.notify.unsubscribe);
   const { endpoint, setEndpoint, enabled } = usePushState();
   const toast = useToast();
+  const { t } = useTranslation();
 
   if (!pushSupported()) {
     if (isIOS() && !isStandalone())
       return (
         <div className="card p-4 text-sm">
-          <p className="font-semibold">📲 Want reminder notifications on iPhone?</p>
-          <p className="text-muted">Tap the Share button, then “Add to Home Screen”, and open Pawlog from there.</p>
+          <p className="font-semibold">{t("push.iosTitle")}</p>
+          <p className="text-muted">{t("push.iosBody")}</p>
         </div>
       );
-    return compact ? null : <p className="text-sm text-muted">This browser doesn't support push notifications.</p>;
+    return compact ? null : <p className="text-sm text-muted">{t("push.unsupported")}</p>;
   }
-  if (key === null) return compact ? null : <p className="text-sm text-muted">Push isn't configured on the server yet (VAPID keys missing).</p>;
+  if (key === null) return compact ? null : <p className="text-sm text-muted">{t("push.notConfigured")}</p>;
   if (enabled && compact) return null;
 
   return (
     <div className={`card flex items-center gap-3 p-4 ${enabled ? "" : "border-brand/40 bg-brand-soft/50"}`}>
       {enabled ? <BellRing className="size-6 text-emerald-600" /> : <BellOff className="size-6 text-brand" />}
       <div className="flex-1 text-sm">
-        <p className="font-semibold">{enabled ? "Notifications on for this device" : "Get notified on this device"}</p>
-        <p className="text-muted">{enabled ? "Reminders will pop up even when the app is closed." : "Reminders and meds, even when the app is closed."}</p>
+        <p className="font-semibold">{enabled ? t("push.onTitle") : t("push.offTitle")}</p>
+        <p className="text-muted">{enabled ? t("push.onBody") : t("push.offBody")}</p>
       </div>
       <button
         type="button"
@@ -57,14 +59,14 @@ export function PushCard({ compact }: { compact?: boolean }) {
               const sub = await subscribePush(key!);
               await subscribe(subscriptionKeys(sub));
               setEndpoint(sub.endpoint);
-              toast({ text: "Notifications enabled 🔔" });
+              toast({ text: t("push.enabled") });
             }
           } catch (e) {
             toast({ text: errorMessage(e), error: true });
           }
         }}
       >
-        {enabled ? "Turn off" : "Enable"}
+        {enabled ? t("push.turnOff") : t("push.enable")}
       </button>
     </div>
   );

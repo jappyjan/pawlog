@@ -3,6 +3,7 @@ import * as webpush from "web-push";
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { localized } from "./schema";
 
 export const sendToHousehold = internalAction({
   args: {
@@ -10,11 +11,11 @@ export const sendToHousehold = internalAction({
     exceptUserId: v.optional(v.id("users")),
     onlyActivity: v.optional(v.boolean()),
     title: v.string(),
-    body: v.string(),
+    body: localized,
     url: v.string(),
     tag: v.optional(v.string()),
   },
-  handler: async (ctx, { householdId, exceptUserId, onlyActivity, ...payload }) => {
+  handler: async (ctx, { householdId, exceptUserId, onlyActivity, body, ...payload }) => {
     const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       console.warn("VAPID keys not configured; skipping push");
@@ -31,7 +32,7 @@ export const sendToHousehold = internalAction({
         try {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            JSON.stringify(payload),
+            JSON.stringify({ ...payload, body: body[s.locale ?? "en"] }),
             { TTL: 60 * 60 * 12, urgency: "high" },
           );
         } catch (err: unknown) {

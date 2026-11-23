@@ -83,17 +83,22 @@ export const mealItem = v.object({
 });
 
 export const mealFields = {
+  mealName: v.optional(v.string()), // from a saved meal, e.g. "Breakfast"
   mealKind: v.optional(v.union(v.literal("meal"), v.literal("treat"))),
   items: v.optional(v.array(mealItem)),
   kcal: v.optional(v.number()), // total, derived from items
   appetite: v.optional(v.union(v.literal("all"), v.literal("most"), v.literal("some"), v.literal("none"))),
 };
 
+/** Push text in every supported language; each recipient gets theirs. */
+export const localized = v.object({ en: v.string(), de: v.string() });
+
 export default defineSchema({
   users: defineTable({
     name: v.optional(v.string()),
     username: v.optional(v.string()),
     notifyActivity: v.optional(v.boolean()),
+    locale: v.optional(v.union(v.literal("en"), v.literal("de"))),
   }),
 
   households: defineTable({
@@ -168,6 +173,16 @@ export default defineSchema({
     notes: v.optional(v.string()),
     archived: v.boolean(),
   }).index("by_household", ["householdId"]),
+
+  // Saved meals per dog, e.g. "Breakfast" = 120 g kibble + 1 scoop topper.
+  meals: defineTable({
+    householdId: v.id("households"),
+    dogId: v.id("dogs"),
+    name: v.string(),
+    items: v.array(mealItem),
+    kcal: v.optional(v.number()),
+    order: v.number(),
+  }).index("by_dog", ["dogId"]),
 
   medications: defineTable({
     householdId: v.id("households"),

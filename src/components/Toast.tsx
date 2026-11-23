@@ -23,12 +23,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex w-full max-w-md items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-medium shadow-lg ${
+            className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-2xl px-4 py-3 text-sm font-medium shadow-lg ${
               t.error ? "bg-red-600 text-white" : "bg-ink text-bg"
             }`}
           >
-            <span className="min-w-0">{t.text}</span>
-            <span className="flex shrink-0 gap-4">
+            <span className="min-w-0 flex-[1_1_12rem]">{t.text}</span>
+            <span className="ml-auto flex shrink-0 gap-4">
               {[...(t.actions ?? []), ...(t.action ? [t.action] : [])].map((a) => (
                 <button
                   key={a.label}

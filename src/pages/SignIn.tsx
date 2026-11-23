@@ -4,31 +4,37 @@ import {
   useSignUpWithUsernamePassword,
 } from "@convex-dev/auth/methods/username-password/react";
 import { api } from "../../convex/_generated/api";
+import { useTranslation } from "react-i18next";
+import i18n from "../i18n";
+import { LanguageSwitch } from "../components/LanguageSwitch";
+
+const t = i18n.t.bind(i18n);
 
 function authError(err: { error: string; [k: string]: unknown }) {
   switch (err.error) {
     case "INVALID_CREDENTIALS":
     case "USER_NOT_FOUND":
-      return "Wrong username or password.";
+      return t("auth.err.credentials");
     case "USERNAME_TAKEN":
     case "USERNAME_ALREADY_TAKEN":
-      return "That username is taken.";
+      return t("auth.err.taken");
     case "PASSWORD_TOO_SHORT":
-      return `Password must be at least ${err.minimumLength ?? 8} characters.`;
+      return t("auth.err.short", { n: Number(err.minimumLength ?? 8) });
     case "PASSWORD_TOO_COMMON":
-      return "That password is too common — pick something less guessable.";
+      return t("auth.err.common");
     case "PASSWORD_HAS_SURROUNDING_WHITESPACE":
-      return "Password can't start or end with a space.";
+      return t("auth.err.whitespace");
     case "RATE_LIMITED":
-      return "Too many attempts. Try again in a minute.";
+      return t("auth.err.rate");
     case "OTHER_ERROR":
-      return "Couldn't reach the server. Check your connection.";
+      return t("auth.err.network");
     default:
       return err.error.replaceAll("_", " ").toLowerCase();
   }
 }
 
 export function SignIn() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [error, setError] = useState<string | null>(null);
   const { signIn, pending: p1 } = useSignInWithUsernamePassword(api.auth);
@@ -40,7 +46,7 @@ export function SignIn() {
       <div className="mb-8 text-center">
         <img src="/favicon.svg" alt="" className="mx-auto mb-4 size-20 rounded-3xl shadow-lg shadow-brand/30" />
         <h1 className="text-3xl font-extrabold">Pawlog</h1>
-        <p className="mt-1 text-muted">Walks, potty, meds & papers — shared with your pack.</p>
+        <p className="mt-1 text-muted">{t("auth.tagline")}</p>
       </div>
       <form
         className="card space-y-4 p-5"
@@ -64,16 +70,16 @@ export function SignIn() {
               onClick={() => setMode(m)}
               className={`rounded-lg py-2 transition ${mode === m ? "bg-card shadow-sm" : "text-muted"}`}
             >
-              {m === "signIn" ? "Sign in" : "Create account"}
+              {m === "signIn" ? t("auth.signIn") : t("auth.signUp")}
             </button>
           ))}
         </div>
         <div>
-          <label className="label" htmlFor="username">Username</label>
+          <label className="label" htmlFor="username">{t("auth.username")}</label>
           <input id="username" name="username" className="input" autoComplete="username" autoCapitalize="none" required disabled={pending} />
         </div>
         <div>
-          <label className="label" htmlFor="password">Password</label>
+          <label className="label" htmlFor="password">{t("auth.password")}</label>
           <input
             id="password"
             name="password"
@@ -87,12 +93,13 @@ export function SignIn() {
         </div>
         {error && <p className="text-sm font-medium text-red-600" role="alert">{error}</p>}
         <button className="btn-primary w-full" disabled={pending}>
-          {pending ? "…" : mode === "signIn" ? "Sign in" : "Create account"}
+          {pending ? "…" : mode === "signIn" ? t("auth.signIn") : t("auth.signUp")}
         </button>
       </form>
       <p className="mt-4 text-center text-xs text-muted">
-        Each person gets their own account. After signing up, one of you creates the household and shares the invite code.
+        {t("auth.hint")}
       </p>
+      <LanguageSwitch className="mt-4 self-center" />
     </div>
   );
 }

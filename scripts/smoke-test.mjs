@@ -75,6 +75,11 @@ await b.mutation(api.dogs.finishWalk, { dogId, pee: false, poop: true, stoolScor
 const todayEv = await a.query(api.events.range, { dogId, from: Date.now() - 3600e3 });
 assert(todayEv.find((e) => e.type === "poop")?.stoolScore === 7, "stool score is clamped to 1–7");
 assert(todayEv.find((e) => e.type === "walk" && e.stoolScore === 2), "walk stores stool score");
+const breakfast = await a.mutation(api.meals.create, { dogId, name: "Breakfast", items: [{ foodId: kibble, name: "Lamb & Rice", qty: 120, unit: "g", kcal: 432 }, { name: "" }] });
+const savedMeals = await b.query(api.meals.list, { dogId });
+assert(savedMeals.length === 1 && savedMeals[0]._id === breakfast && savedMeals[0].kcal === 432 && savedMeals[0].items.length === 1, "saved meal shared, blank items dropped, kcal summed");
+await a.mutation(api.users.setLocale, { locale: "de" });
+assert((await a.query(api.users.me, {})).locale === "de", "user locale stored for localized push");
 let foodBlocked = false;
 const outsider = await user("Stranger");
 try { await outsider.mutation(api.foods.update, { foodId: kibble, name: "x", kind: "dry", unit: "g" }); } catch { foodBlocked = true; }

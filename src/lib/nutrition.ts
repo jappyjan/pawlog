@@ -1,4 +1,7 @@
 import type { Doc } from "../../convex/_generated/dataModel";
+import i18n from "../i18n";
+
+const t = i18n.t.bind(i18n);
 
 export type Food = Doc<"foods">;
 export type FoodUnit = Food["unit"];
@@ -8,16 +11,17 @@ export type StoolColor = NonNullable<Doc<"events">["stoolColor"]>;
 export type StoolFlag = NonNullable<Doc<"events">["stoolFlags"]>[number];
 export type Appetite = NonNullable<Doc<"events">["appetite"]>;
 
-/** Purina-style 1–7 fecal score. 2 is ideal. */
+/** Purina-style 1–7 fecal score. 2 is ideal. Labels: stool.score.N / stool.hint.N */
 export const STOOL_SCORES = [
-  { score: 1, label: "Hard", hint: "Hard, dry pellets", tone: "amber" },
-  { score: 2, label: "Firm", hint: "Firm, segmented, easy to pick up (ideal)", tone: "green" },
-  { score: 3, label: "Moist", hint: "Log-shaped, moist surface, holds shape", tone: "green" },
-  { score: 4, label: "Soggy", hint: "Very moist, loses shape when picked up", tone: "yellow" },
-  { score: 5, label: "Piles", hint: "Very moist piles, some shape", tone: "orange" },
-  { score: 6, label: "Mushy", hint: "Texture but no shape", tone: "red" },
-  { score: 7, label: "Watery", hint: "Watery, no texture", tone: "red" },
+  { score: 1, tone: "amber" },
+  { score: 2, tone: "green" },
+  { score: 3, tone: "green" },
+  { score: 4, tone: "yellow" },
+  { score: 5, tone: "orange" },
+  { score: 6, tone: "red" },
+  { score: 7, tone: "red" },
 ] as const;
+export type StoolScore = (typeof STOOL_SCORES)[number]["score"];
 
 export const TONE: Record<(typeof STOOL_SCORES)[number]["tone"], string> = {
   amber: "bg-amber-500",
@@ -27,23 +31,26 @@ export const TONE: Record<(typeof STOOL_SCORES)[number]["tone"], string> = {
   red: "bg-red-500",
 };
 
-export const stoolMeta = (score?: number) => STOOL_SCORES.find((s) => s.score === score);
+export const stoolMeta = (score?: number) => {
+  const s = STOOL_SCORES.find((x) => x.score === score);
+  return s && { ...s, label: t(`stool.score.s${s.score}`), hint: t(`stool.hint.s${s.score}`) };
+};
 
-export const STOOL_COLORS: { id: StoolColor; label: string; swatch: string }[] = [
-  { id: "brown", label: "Brown", swatch: "#7a4b25" },
-  { id: "yellow", label: "Yellow", swatch: "#d9a521" },
-  { id: "green", label: "Green", swatch: "#5f7d2c" },
-  { id: "black", label: "Black / tarry", swatch: "#1d1b19" },
-  { id: "red", label: "Red streaks", swatch: "#b3261e" },
-  { id: "grey", label: "Grey / greasy", swatch: "#9a958e" },
+export const STOOL_COLORS: { id: StoolColor; swatch: string }[] = [
+  { id: "brown", swatch: "#7a4b25" },
+  { id: "yellow", swatch: "#d9a521" },
+  { id: "green", swatch: "#5f7d2c" },
+  { id: "black", swatch: "#1d1b19" },
+  { id: "red", swatch: "#b3261e" },
+  { id: "grey", swatch: "#9a958e" },
 ];
 
-export const STOOL_FLAGS: { id: StoolFlag; label: string; warn?: boolean }[] = [
-  { id: "mucus", label: "Mucus" },
-  { id: "blood", label: "Blood", warn: true },
-  { id: "worms", label: "Worms", warn: true },
-  { id: "straining", label: "Straining" },
-  { id: "foreign", label: "Foreign object" },
+export const STOOL_FLAGS: { id: StoolFlag; warn?: boolean }[] = [
+  { id: "mucus" },
+  { id: "blood", warn: true },
+  { id: "worms", warn: true },
+  { id: "straining" },
+  { id: "foreign" },
 ];
 
 const LEGACY_QUALITY = { hard: 1, normal: 2, soft: 4, diarrhea: 7 } as const;
@@ -64,32 +71,23 @@ export function stoolWarning(e: Doc<"events">) {
   );
 }
 
-export const UNITS: { id: FoodUnit; label: string; short: string }[] = [
-  { id: "g", label: "grams", short: "g" },
-  { id: "piece", label: "pieces", short: "pc" },
-  { id: "cup", label: "cups", short: "cup" },
-  { id: "can", label: "cans", short: "can" },
-  { id: "scoop", label: "scoops", short: "scoop" },
-];
-export const unitShort = (u?: FoodUnit) => UNITS.find((x) => x.id === u)?.short ?? "";
+export const UNITS: FoodUnit[] = ["g", "piece", "cup", "can", "scoop"];
+export const unitShort = (u?: FoodUnit) => (u ? t(`food.unitShort.${u}`) : "");
+export const unitLong = (u: FoodUnit) => t(`food.unit.${u}`);
 
-export const KINDS: { id: FoodKind; label: string; emoji: string }[] = [
-  { id: "dry", label: "Dry / kibble", emoji: "🥣" },
-  { id: "wet", label: "Wet / canned", emoji: "🥫" },
-  { id: "raw", label: "Raw / BARF", emoji: "🥩" },
-  { id: "fresh", label: "Fresh / home-cooked", emoji: "🍲" },
-  { id: "treat", label: "Treat / chew", emoji: "🦴" },
-  { id: "supplement", label: "Supplement / topper", emoji: "🧂" },
-  { id: "other", label: "Other", emoji: "🍽️" },
-];
-export const kindMeta = (k: FoodKind) => KINDS.find((x) => x.id === k)!;
+const KIND_EMOJI: Record<FoodKind, string> = {
+  dry: "🥣",
+  wet: "🥫",
+  raw: "🥩",
+  fresh: "🍲",
+  treat: "🦴",
+  supplement: "🧂",
+  other: "🍽️",
+};
+export const KINDS = Object.keys(KIND_EMOJI) as FoodKind[];
+export const kindMeta = (k: FoodKind) => ({ id: k, emoji: KIND_EMOJI[k], label: t(`food.kind.${k}`) });
 
-export const APPETITE: { id: Appetite; label: string }[] = [
-  { id: "all", label: "Ate all" },
-  { id: "most", label: "Most" },
-  { id: "some", label: "A little" },
-  { id: "none", label: "Refused" },
-];
+export const APPETITE: Appetite[] = ["all", "most", "some", "none"];
 
 /** kcal for an amount of a food: kcalPer is per 100 g for grams, otherwise per unit. */
 export function kcalFor(food: Pick<Food, "unit" | "kcalPer"> | undefined, qty: number | undefined) {
@@ -98,7 +96,7 @@ export function kcalFor(food: Pick<Food, "unit" | "kcalPer"> | undefined, qty: n
 }
 
 export function itemText(i: MealItem) {
-  const amt = i.qty !== undefined ? `${i.qty}${i.unit === "g" ? " g" : ` ${unitShort(i.unit)}`}` : "";
+  const amt = i.qty !== undefined ? `${i.qty} ${unitShort(i.unit ?? "g")}` : "";
   return [i.name, amt].filter(Boolean).join(" ");
 }
 

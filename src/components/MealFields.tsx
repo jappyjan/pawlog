@@ -5,13 +5,14 @@ import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { FoodSheet } from "./FoodSheet";
 import { APPETITE, kcalFor, kindMeta, unitShort, type Appetite, type Food, type MealItem } from "../lib/nutrition";
+import { useTranslation } from "react-i18next";
 
 type Row = { key: number; foodId: string; name: string; qty: string; kcal: string };
 export type Meal = { mealKind: "meal" | "treat"; rows: Row[]; appetite?: Appetite };
 
 let nextKey = 1;
 const fmt = (n?: number) => (n === undefined ? "" : String(n));
-const toRow = (i: MealItem): Row => ({ key: nextKey++, foodId: i.foodId ?? "", name: i.foodId ? "" : i.name, qty: fmt(i.qty), kcal: fmt(i.kcal) });
+export const toRow = (i: MealItem): Row => ({ key: nextKey++, foodId: i.foodId ?? "", name: i.foodId ? "" : i.name, qty: fmt(i.qty), kcal: fmt(i.kcal) });
 const emptyRow = (food?: Food): Row => ({ key: nextKey++, foodId: food?._id ?? "", name: "", qty: fmt(food?.defaultQty), kcal: "" });
 const parse = (s: string) => {
   const n = parseFloat(s.replace(",", "."));
@@ -54,7 +55,25 @@ export function mealArgs(m: Meal, foods: Food[] | undefined) {
   return { mealKind: m.mealKind, items, appetite: m.appetite };
 }
 
-export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange: (m: Meal) => void; dogFood?: string }) {
+/** Form state for editing a saved meal's foods. */
+export const mealFromItems = (items: MealItem[] | undefined, foods?: Food[]): Meal => ({
+  mealKind: "meal",
+  rows: items?.length ? items.map(toRow) : [emptyRow(foods?.find((f) => !f.archived && f.kind !== "treat"))],
+});
+
+export function MealFields({
+  value,
+  onChange,
+  dogFood,
+  preset,
+}: {
+  value: Meal;
+  onChange: (m: Meal) => void;
+  dogFood?: string;
+  /** Editing a saved meal: no meal/treat switch, no appetite. */
+  preset?: boolean;
+}) {
+  const { t } = useTranslation();
   const foods = useQuery(api.foods.list);
   const [newFor, setNewFor] = useState<number | null>(null);
   const active = foods?.filter((f) => !f.archived) ?? [];
@@ -65,7 +84,7 @@ export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 rounded-xl bg-bg p-1" role="radiogroup" aria-label="Meal or treat">
+      {!preset && <div className="grid grid-cols-2 rounded-xl bg-bg p-1" role="radiogroup" aria-label={t("meal.kindLabel")}>
         {(["meal", "treat"] as const).map((k) => (
           <button
             key={k}
@@ -80,13 +99,13 @@ export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange
             }}
             className={`rounded-lg py-2 text-sm font-semibold transition ${value.mealKind === k ? "bg-card shadow-sm" : "text-muted"}`}
           >
-            {k === "meal" ? "🍖 Meal" : "🦴 Treat / snack"}
+            {k === "meal" ? `🍖 ${t("events.meal")}` : `🦴 ${t("meal.treatSnack")}`}
           </button>
         ))}
-      </div>
+      </div>}
 
       <fieldset className="space-y-2">
-        <legend className="label">What {isTreat ? "treat" : "food"} <span className="font-normal text-muted">(optional)</span></legend>
+        <legend className="label">{isTreat ? t("meal.whatTreat") : t("meal.whatFood")} {!preset && <span className="font-normal text-muted">({t("common.optional")})</span>}</legend>
         {value.rows.map((r) => {
           const food = foods?.find((f) => f._id === r.foodId);
           const auto = autoKcal(r, foods);
@@ -95,7 +114,7 @@ export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange
               <div className="flex gap-2">
                 <select
                   className="input min-w-0 flex-1"
-                  aria-label="Food"
+                  aria-label={t("meal.food")}
                   value={r.foodId}
                   onChange={(e) => {
                     if (e.target.value === "__new") return setNewFor(r.key);
@@ -103,19 +122,19 @@ export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange
                     setRow(r.key, { foodId: e.target.value, kcal: "", qty: r.qty || fmt(f?.defaultQty) });
                   }}
                 >
-                  <option value="">Other (type below)</option>
+                  <option value="">{t("meal.otherFood")}</option>
                   {sorted.map((f) => (
                     <option key={f._id} value={f._id}>
                       {kindMeta(f.kind).emoji} {f.name}{f.brand ? ` · ${f.brand}` : ""}
                     </option>
                   ))}
-                  <option value="__new">＋ New food…</option>
+                  <option value="__new">＋ {t("food.new")}…</option>
                 </select>
                 {value.rows.length > 1 && (
                   <button
                     type="button"
                     className="btn-ghost size-11 shrink-0 p-0"
-                    aria-label="Remove item"
+                    aria-label={t("meal.removeItem")}
                     onClick={() => onChange({ ...value, rows: value.rows.filter((x) => x.key !== r.key) })}
                   >
                     <X className="size-4" />
@@ -125,26 +144,26 @@ export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange
               {!food && (
                 <input
                   className="input"
-                  aria-label="Food name"
+                  aria-label={t("meal.foodName")}
                   value={r.name}
                   onChange={(e) => setRow(r.key, { name: e.target.value })}
-                  placeholder={isTreat ? "e.g. chew stick, cheese" : dogFood || "e.g. kibble, chicken & rice"}
+                  placeholder={isTreat ? t("meal.treatPh") : dogFood || t("meal.foodPh")}
                 />
               )}
               <div className="grid grid-cols-2 gap-2">
                 <label className="relative block">
-                  <span className="sr-only">Amount</span>
+                  <span className="sr-only">{t("meal.amount")}</span>
                   <input
                     className="input pr-14"
                     inputMode="decimal"
                     value={r.qty}
                     onChange={(e) => setRow(r.key, { qty: e.target.value })}
-                    placeholder="Amount"
+                    placeholder={t("meal.amount")}
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-sm text-muted">{unitShort(food?.unit ?? "g")}</span>
                 </label>
                 <label className="relative block">
-                  <span className="sr-only">Calories</span>
+                  <span className="sr-only">{t("meal.calories")}</span>
                   <input
                     className="input pr-12"
                     inputMode="numeric"
@@ -160,35 +179,36 @@ export function MealFields({ value, onChange, dogFood }: { value: Meal; onChange
         })}
         <div className="flex items-center justify-between">
           <button type="button" className="btn-ghost -ml-2 text-sm" onClick={() => onChange({ ...value, rows: [...value.rows, emptyRow()] })}>
-            <Plus className="size-4" /> Add {isTreat ? "another" : "food / topper"}
+            <Plus className="size-4" /> {isTreat ? t("meal.addAnother") : t("meal.addFood")}
           </button>
           {total > 0 && <span className="text-sm font-semibold tabular-nums">≈ {Math.round(total)} kcal</span>}
         </div>
-        {foods?.length === 0 && (
-          <p className="text-xs text-muted">Tip: save your usual food with its calories (＋ New food…) and portions fill in by themselves.</p>
-        )}
+        {foods?.length === 0 && <p className="text-xs text-muted">{t("meal.tip")}</p>}
       </fieldset>
 
-      <fieldset>
-        <legend className="label">Appetite <span className="font-normal text-muted">(optional)</span></legend>
-        <div className="flex flex-wrap gap-2">
-          {APPETITE.map((a) => {
-            const on = value.appetite === a.id;
-            return (
-              <button key={a.id} type="button" aria-pressed={on} onClick={() => onChange({ ...value, appetite: on ? undefined : a.id })} className={`chip ${on ? "chip-on" : ""}`}>
-                {a.label}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
+      {!preset && (
+        <fieldset>
+          <legend className="label">{t("meal.appetiteLabel")} <span className="font-normal text-muted">({t("common.optional")})</span></legend>
+          <div className="flex flex-wrap gap-2">
+            {APPETITE.map((a) => {
+              const on = value.appetite === a;
+              return (
+                <button key={a} type="button" aria-pressed={on} onClick={() => onChange({ ...value, appetite: on ? undefined : a })} className={`chip ${on ? "chip-on" : ""}`}>
+                  {t(`meal.appetite.${a}`)}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
       <FoodSheet
         open={newFor !== null}
         onClose={() => setNewFor(null)}
         defaultKind={isTreat ? "treat" : "dry"}
-        onSaved={(id: Id<"foods">) => {
-          if (newFor !== null) setRow(newFor, { foodId: id, name: "", kcal: "" });
+        onSaved={(id: Id<"foods">, defaultQty?: number) => {
+          const row = value.rows.find((r) => r.key === newFor);
+          if (row) setRow(row.key, { foodId: id, name: "", kcal: "", qty: row.qty || fmt(defaultQty) });
         }}
       />
     </div>

@@ -7,6 +7,7 @@ import { registerSW } from "virtual:pwa-register";
 import { api } from "../convex/_generated/api";
 import App from "./App";
 import "./index.css";
+import "./i18n";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 

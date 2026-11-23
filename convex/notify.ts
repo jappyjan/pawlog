@@ -67,16 +67,13 @@ export const subscriptionsFor = internalQuery({
     const subs = [];
     for (const m of members) {
       if (m.userId === exceptUserId) continue;
-      if (onlyActivity) {
-        const u = await ctx.db.get(m.userId);
-        if (!u?.notifyActivity) continue;
-      }
-      subs.push(
-        ...(await ctx.db
-          .query("pushSubscriptions")
-          .withIndex("by_user", (q) => q.eq("userId", m.userId))
-          .collect()),
-      );
+      const u = await ctx.db.get(m.userId);
+      if (onlyActivity && !u?.notifyActivity) continue;
+      const mine = await ctx.db
+        .query("pushSubscriptions")
+        .withIndex("by_user", (q) => q.eq("userId", m.userId))
+        .collect();
+      subs.push(...mine.map((s) => ({ ...s, locale: u?.locale })));
     }
     return subs;
   },
@@ -101,22 +98,35 @@ export const activity = internalMutation({
     if (!ev) return;
     const [dog, user] = await Promise.all([ctx.db.get(ev.dogId), ctx.db.get(ev.byUserId)]);
     if (!dog) return;
-    const who = user?.name ?? "Someone";
-    let text: string;
+    const who = { en: user?.name ?? "Someone", de: user?.name ?? "Jemand" };
+    let text: { en: string; de: string };
     switch (ev.type) {
-      case "walk":
-        text = `${who} walked ${dog.name}${ev.durationMin ? ` (${ev.durationMin} min)` : ""}${ev.pee || ev.poop ? ` · ${[ev.pee && "pee", ev.poop && "poop"].filter(Boolean).join(" + ")}` : ""}`;
+      case "walk": {
+        const mins = ev.durationMin ? ` (${ev.durationMin} min)` : "";
+        const potty = (l: "en" | "de") =>
+          ev.pee || ev.poop
+            ? ` · ${[ev.pee && (l === "en" ? "pee" : "Pipi"), ev.poop && (l === "en" ? "poop" : "Häufchen")].filter(Boolean).join(" + ")}`
+            : "";
+        text = {
+          en: `${who.en} walked ${dog.name}${mins}${potty("en")}`,
+          de: `${who.de} war mit ${dog.name} Gassi${mins}${potty("de")}`,
+        };
         break;
+      }
       case "meal": {
         if (ev.mealKind === "treat") return;
-        const what = ev.items?.map((i) => i.name).join(" + ") || ev.amount;
+        const what = ev.mealName || ev.items?.map((i) => i.name).join(" + ") || ev.amount;
         const detail = [what, ev.kcal && `${ev.kcal} kcal`].filter(Boolean).join(", ");
-        text = `${who} fed ${dog.name}${detail ? ` (${detail})` : ""}`;
+        const d = detail ? ` (${detail})` : "";
+        text = { en: `${who.en} fed ${dog.name}${d}`, de: `${who.de} hat ${dog.name} gefüttert${d}` };
         break;
       }
       case "medication": {
         const med = ev.medicationId ? await ctx.db.get(ev.medicationId) : null;
-        text = `${who} gave ${dog.name} ${med?.name ?? "medication"}`;
+        text = {
+          en: `${who.en} gave ${dog.name} ${med?.name ?? "medication"}`,
+          de: `${who.de} hat ${dog.name} ${med?.name ?? "Medikamente"} gegeben`,
+        };
         break;
       }
       default:

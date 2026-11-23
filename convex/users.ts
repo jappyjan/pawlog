@@ -50,3 +50,13 @@ export const setName = mutation({
     await ctx.db.patch(userId, { name: name.trim().slice(0, 60) || undefined, username: username ?? undefined });
   },
 });
+
+export const setLocale = mutation({
+  args: { locale: v.union(v.literal("en"), v.literal("de")) },
+  handler: async (ctx, { locale }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    const user = await ctx.db.get(userId);
+    if (user && user.locale !== locale) await ctx.db.patch(userId, { locale });
+  },
+});

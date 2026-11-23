@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 function urlBase64ToUint8Array(base64: string) {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
@@ -21,9 +22,9 @@ export async function currentSubscription() {
 
 export async function subscribePush(vapidPublicKey: string) {
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") throw new Error("Notifications were not allowed");
+  if (permission !== "granted") throw new Error(i18n.t("push.denied"));
   const reg = await navigator.serviceWorker.getRegistration();
-  if (!reg) throw new Error("App isn't fully installed yet — reload and try again");
+  if (!reg) throw new Error(i18n.t("push.notReady"));
   const existing = await reg.pushManager.getSubscription();
   if (existing) return existing;
   return await reg.pushManager.subscribe({

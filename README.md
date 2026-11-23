@@ -10,7 +10,7 @@ Everything runs on free tiers: the Convex free plan, plus any static host (Verce
 
 - **Today**: one-tap Pee / Poop / Meal (with undo), "time since last pee/poop/walk/meal", walk goal progress, reminders due today, and today's timeline with who logged each entry.
 - **Live walks**: tap *Start walk* and your partner sees "Walking · 12 min" on their phone. When you tap *Walk done*, you tick pee/poop and the duration is filled in for you.
-- **Food & calories** (optional): keep a shared food list (kibble, wet food, toppers, treats) with kcal per 100 g or per piece/cup/can and a usual portion. A meal can have several foods, and calories fill in from the amount. One tap on *Meal* repeats the last meal. Treats are logged separately, and appetite can be recorded (ate all / most / a little / refused). There's a daily calorie goal with a progress bar, plus a kcal-per-day chart.
+- **Food & calories** (optional): keep a shared food list (kibble, wet food, toppers, treats) with kcal per 100 g or per piece/cup/can and a usual portion. A meal can have several foods, and calories fill in from the amount. Save your regular meals (e.g. *Breakfast* = 120 g kibble + topper) on the **Food & meals** page; the *Meal* button then logs one with a single tap (or repeats the last meal if none are saved). Treats are logged separately, and appetite can be recorded (ate all / most / a little / refused). There's a daily calorie goal with a progress bar, plus a kcal-per-day chart.
 - **Stool tracking** (optional): a 1–7 fecal score (2 is ideal), color, and signs such as mucus, blood, worms or straining, on poops and on walks. Warning signs get a *Check* badge. Health shows the 14-day score trend, the share of ideal stools, and a count of warnings.
 - **History**: everything, grouped by day, with filters. Tap an entry to edit or delete it, or add a past one.
 - **Health**: weight chart, 14-day activity chart and averages, medications with dose schedules and a *Give* button, vet visits.
@@ -19,6 +19,7 @@ Everything runs on free tiers: the Convex free plan, plus any static host (Verce
 - **Papers**: upload photos or PDFs (vaccination pass, pedigree, insurance, receipts) by category, with expiry warnings. Microchip, registration and insurance numbers can be copied with one tap.
 - **Sharing**: each person has their own account. One person creates the household, the other joins with an 8-character invite code. There's an optional "notify me when my partner walks/feeds/medicates" so nobody feeds the dog twice.
 - **Multiple dogs** per household, a photo for each, and a full profile (breed, birthday, chip, vet, insurance, food, notes).
+- **English & German**: follows the browser language automatically, switchable in Settings. Push notifications are sent in each person's language.
 - **PWA**: installable, works offline as an app shell, has app shortcuts ("Log a walk"), dark mode, and safe-area insets for iPhone.
 
 ## Local development
