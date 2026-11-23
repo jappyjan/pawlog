@@ -11,7 +11,20 @@ import "./i18n";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-registerSW({ immediate: true });
+// Installed PWAs (iOS especially) resume from the background without a page load, so the
+// browser never checks for a new service worker. Check on every return to the foreground
+// and hourly; autoUpdate then reloads the page onto the new version.
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, reg) {
+    if (!reg) return;
+    const check = () => {
+      if (navigator.onLine) void reg.update().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && check());
+    setInterval(check, 60 * 60_000);
+  },
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
