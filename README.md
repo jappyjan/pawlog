@@ -74,6 +74,25 @@ The image is plain nginx with SPA fallback and correct cache headers for the ser
 
 > HTTPS is required for service workers and push. Both Vercel and Coolify (Let's Encrypt) provide it.
 
+## Backups
+
+The Convex free plan has no scheduled backups, so `.github/workflows/backup.yml` makes one every night (02:17 UTC, or by hand via *Actions → Backup → Run workflow*). It runs `npx convex export --include-file-storage` against production, encrypts the ZIP with [age](https://github.com/FiloSottile/age) and uploads it as a workflow artifact, kept for 90 days.
+
+The repo is public and anyone can download its artifacts, which is why the file is encrypted. The workflow only holds the **public** key (`AGE_RECIPIENT`). The private key is kept offline in a password manager; without it the backups cannot be read.
+
+Setup: add a Convex **production deploy key** as the repo secret `CONVEX_DEPLOY_KEY` (Convex dashboard → production deployment → *Settings → Deploy keys*).
+
+Restore:
+
+```bash
+gh run download <run-id> -n pawlog-backup-<timestamp>     # or download from the Actions page
+age -d -i pawlog-backup-key.txt -o backup.zip pawlog-backup-<timestamp>.zip.age
+npx convex export --prod --include-file-storage --path before-restore.zip   # safety copy first
+npx convex import --prod --replace-all backup.zip
+```
+
+`backup.zip` is a normal Convex export: one `documents.jsonl` per table plus a `_storage` folder with the uploaded files.
+
 ## Installing on phones
 
 - **Android / Chrome**: open the site, then use *Install app* (also in Settings) and enable notifications in *Reminders*.

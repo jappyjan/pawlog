@@ -1,0 +1,65 @@
+# Nightly backup of the production Convex deployment (tables + file storage).
+# The export is encrypted with age before upload, because artifacts of a public
+# repo can be downloaded by any GitHub user. Only the private key (kept offline)
+# can decrypt it. Restore steps: see "Backups" in README.md.
+name: Backup
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # daily, 02:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+env:
+  # Public key only; safe to commit.
+  AGE_RECIPIENT: age1e8yxew5jmrvwt70kalgvyhhrt9et5leuv09resld2kua6tsjz5fsr4sws8
+
+jobs:
+  backup:
+    if: github.repository == 'jappyjan/pawlog'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+
+      - name: Export production data
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: |
+          test -n "$CONVEX_DEPLOY_KEY" || { echo "CONVEX_DEPLOY_KEY secret is missing"; exit 1; }
+          umask 077
+          npx convex export --include-file-storage --path "$RUNNER_TEMP/export.zip"
+
+      - name: Encrypt
+        id: encrypt
+        run: |
+          name="pawlog-backup-$(date -u +%Y-%m-%dT%H%MZ)"
+          mkdir -p out
+          age -r "$AGE_RECIPIENT" -o "out/$name.zip.age" "$RUNNER_TEMP/export.zip"
+          shred -u "$RUNNER_TEMP/export.zip" || rm -f "$RUNNER_TEMP/export.zip"
+          ls -l out
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.encrypt.outputs.name }}
+          path: out/*.zip.age
+          retention-days: 90
+          compression-level: 0
+          if-no-files-found: error
